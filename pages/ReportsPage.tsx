@@ -1,11 +1,8 @@
-
-
-
 import React from 'react';
 import { AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useData } from '../context/DataContext';
 import { mockSalesDataForChart } from '../data/mockData';
-import { FileTextIcon, PrinterIcon } from '../components/IconComponents';
+import ExportDropdown from '../components/ExportDropdown';
 
 const COLORS = ['#4f46e5', '#818cf8', '#a5b4fc', '#c7d2fe'];
 
@@ -46,20 +43,24 @@ const ReportsPage: React.FC = () => {
         sold: Math.floor(Math.random() * (p.stock + 50)) + 10 // Mock sold data
     }));
 
+    // Fix: Explicitly type the columns to ensure the 'accessor' property is a key of the data object, satisfying the ExportDropdown component's props type.
+    const salesExportColumns: { header: string; accessor: keyof typeof mockSalesDataForChart[0] }[] = [
+        { header: 'Month', accessor: 'name' },
+        { header: 'Sales', accessor: 'sales' },
+        { header: 'Profit', accessor: 'profit' },
+    ];
+
 
     return (
         <div className="space-y-8">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                 <h2 className="text-3xl font-bold text-gray-800 dark:text-white">Reports & Analytics</h2>
                 <div className="flex items-center space-x-2">
-                    <button className="flex items-center px-4 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
-                        <FileTextIcon className="w-5 h-5 mr-2" />
-                        Export as CSV
-                    </button>
-                    <button className="flex items-center px-4 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
-                        <PrinterIcon className="w-5 h-5 mr-2" />
-                        Print Report
-                    </button>
+                    <ExportDropdown 
+                        data={mockSalesDataForChart}
+                        columns={salesExportColumns}
+                        fileName="Sales_Report"
+                    />
                 </div>
             </div>
 

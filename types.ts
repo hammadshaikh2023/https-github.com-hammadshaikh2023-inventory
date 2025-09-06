@@ -1,3 +1,5 @@
+export type Currency = string;
+
 export interface Product {
   id: string;
   name: string;
@@ -6,6 +8,7 @@ export interface Product {
   stock: number;
   unitOfMeasure: 'Ton' | 'Cubic Meter' | 'Bag' | 'Drum';
   price: number;
+  currency: Currency;
   status: 'In Stock' | 'Low Stock' | 'Out of Stock';
   warehouse: string;
   dateAdded: string;
@@ -30,6 +33,7 @@ export interface SalesOrder {
   };
   date: string;
   total: number;
+  currency: Currency;
   status: 'Fulfilled' | 'Pending' | 'Cancelled';
   items: OrderItem[];
 }
@@ -42,6 +46,7 @@ export interface PurchaseOrder {
     };
     date: string;
     total: number;
+    currency: Currency;
     status: 'Received' | 'Pending' | 'Cancelled';
     items: OrderItem[];
 }

@@ -1,6 +1,5 @@
-
 import React, { createContext, useState, useContext, ReactNode } from 'react';
-import { Product, SalesOrder, PurchaseOrder, OrderItem, User } from '../types';
+import { Product, SalesOrder, PurchaseOrder, OrderItem, User, Currency } from '../types';
 import { mockProducts, mockSalesOrders, mockPurchaseOrders, mockUsers } from '../data/mockData';
 
 interface DataContextType {
@@ -10,8 +9,8 @@ interface DataContextType {
     users: User[];
     addProduct: (product: Omit<Product, 'id'>) => void;
     updateProduct: (product: Product) => void;
-    addSalesOrder: (order: Omit<SalesOrder, 'id' | 'total' | 'status'> & { items: OrderItem[] }) => void;
-    addPurchaseOrder: (order: Omit<PurchaseOrder, 'id' | 'total' | 'status'> & { items: OrderItem[] }) => void;
+    addSalesOrder: (order: Omit<SalesOrder, 'id' | 'total' | 'status'> & { items: OrderItem[], currency: Currency }) => void;
+    addPurchaseOrder: (order: Omit<PurchaseOrder, 'id' | 'total' | 'status'> & { items: OrderItem[], currency: Currency }) => void;
     addUser: (user: Omit<User, 'id'>) => void;
     updateUser: (user: User) => void;
 }
@@ -54,7 +53,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setProducts(prevProducts => prevProducts.map(p => p.id === updatedProduct.id ? updatedProduct : p));
     }
 
-    const addSalesOrder = (order: Omit<SalesOrder, 'id' | 'total' | 'status'> & { items: OrderItem[] }) => {
+    const addSalesOrder = (order: Omit<SalesOrder, 'id' | 'total' | 'status'> & { items: OrderItem[], currency: Currency }) => {
         const total = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         const newOrder: SalesOrder = {
             ...order,
@@ -73,7 +72,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         });
     };
 
-    const addPurchaseOrder = (order: Omit<PurchaseOrder, 'id' | 'total' | 'status'> & { items: OrderItem[] }) => {
+    const addPurchaseOrder = (order: Omit<PurchaseOrder, 'id' | 'total' | 'status'> & { items: OrderItem[], currency: Currency }) => {
         const total = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         const newOrder: PurchaseOrder = {
             ...order,

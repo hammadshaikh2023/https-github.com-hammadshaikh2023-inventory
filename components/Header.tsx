@@ -4,6 +4,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import { SunIcon, MoonIcon, MenuIcon, BellIcon, DownloadIcon } from './IconComponents';
+import FontSizeSelector from './FontSizeSelector';
 
 interface HeaderProps {
     setSidebarOpen: (open: boolean) => void;
@@ -114,7 +115,7 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen }) => {
                     <MenuIcon />
                 </button>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4">
                 {installPromptEvent && !isAppInstalled && (
                     <button
                         onClick={handleInstallClick}
@@ -126,6 +127,7 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen }) => {
                         Install
                     </button>
                 )}
+                <FontSizeSelector />
                 <button
                     onClick={toggleTheme}
                     className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none"

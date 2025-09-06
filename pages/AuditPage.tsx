@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import DataTable from '../components/DataTable';
 import { mockAuditLogs } from '../data/mockData';
 import { AuditLog } from '../types';
-import { FileTextIcon } from '../components/IconComponents';
+import ExportDropdown from '../components/ExportDropdown';
 
 const AuditPage: React.FC = () => {
     const [typeFilter, setTypeFilter] = useState('All');
@@ -35,17 +35,20 @@ const AuditPage: React.FC = () => {
         { header: 'Details', accessor: 'details' as keyof AuditLog },
     ];
 
+    const exportColumns = columns.map(c => ({ header: c.header, accessor: c.accessor }));
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                 <h2 className="text-3xl font-bold text-gray-800 dark:text-white">Audit Log</h2>
-                <button className="flex items-center px-4 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
-                    <FileTextIcon className="w-5 h-5 mr-2" />
-                    Download Report
-                </button>
+                <ExportDropdown
+                    data={filteredLogs}
+                    columns={exportColumns}
+                    fileName="Audit_Log"
+                />
             </div>
             
-             <div className="p-4 bg-white dark:bg-gray-800 rounded-xl shadow-lg flex flex-col md:flex-row items-center gap-4">
+             <div className="p-4 bg-white dark:bg-gray-800 rounded-xl shadow-lg flex flex-col md:flex-row items-center gap-4 no-print">
                 <div className="flex items-center gap-2">
                     <label className="text-sm font-medium">From:</label>
                     <input 

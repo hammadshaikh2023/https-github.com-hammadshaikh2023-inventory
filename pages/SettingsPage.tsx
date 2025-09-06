@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../context/SettingsContext';
 import Modal from '../components/Modal';
 import { PlusIcon } from '../components/IconComponents';
 import { User } from '../types';
+import CurrencySelector from '../components/CurrencySelector';
 
 const SettingsPage: React.FC = () => {
     const { currentUser } = useAuth();
 
     const allTabs = [
         { id: 'profile', label: 'Profile', component: <ProfileSettings /> },
+        { id: 'general', label: 'General', component: <GeneralSettings /> },
         { id: 'users', label: 'Users & Roles', component: <UsersAndRolesSettings /> },
         { id: 'database', label: 'Database', component: <DatabaseSettings /> },
         { id: 'security', label: 'Security', component: <SecuritySettings /> },
@@ -17,7 +20,7 @@ const SettingsPage: React.FC = () => {
 
     const availableTabs = currentUser?.roles.includes('Admin')
         ? allTabs
-        : allTabs.filter(tab => tab.id === 'profile');
+        : allTabs.filter(tab => tab.id === 'profile' || tab.id === 'general');
         
     const [activeTab, setActiveTab] = useState(availableTabs[0].id);
 
@@ -69,7 +72,7 @@ const FormField: React.FC<{label: string, type: string, placeholder: string, id:
 ({label, type, placeholder, id, value, onChange, required}) => (
     <div>
         <label htmlFor={id} className="block text-sm font-medium text-gray-700 dark:text-gray-300">{label}</label>
-        <input type={type} id={id} name={id} placeholder={placeholder} value={value} onChange={onChange} required={required} className="mt-1 block w-full shadow-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600" />
+        <input type={type} id={id} name={id} placeholder={placeholder} value={value} onChange={onChange} required={required} className="mt-1 block w-full shadow-sm rounded-md" />
     </div>
 );
 
@@ -78,32 +81,47 @@ const ProfileSettings: React.FC = () => (
         <h3 className="text-lg font-medium text-gray-900 dark:text-white">User Profile</h3>
         <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Full Name</label>
-            <input type="text" id="name" placeholder="Admin User" className="mt-1 block w-full shadow-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600" />
+            <input type="text" id="name" placeholder="Admin User" className="mt-1 block w-full shadow-sm rounded-md" />
         </div>
         <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email Address</label>
-            <input type="email" id="email" placeholder="admin@example.com" className="mt-1 block w-full shadow-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600" />
+            <input type="email" id="email" placeholder="admin@example.com" className="mt-1 block w-full shadow-sm rounded-md" />
         </div>
         <div className="pt-4 border-t dark:border-gray-700">
              <h3 className="text-lg font-medium text-gray-900 dark:text-white">Change Password</h3>
              <div className="space-y-4 mt-4">
                  <div>
                     <label htmlFor="current_password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Current Password</label>
-                    <input type="password" id="current_password" placeholder="••••••••" className="mt-1 block w-full shadow-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600" />
+                    <input type="password" id="current_password" placeholder="••••••••" className="mt-1 block w-full shadow-sm rounded-md" />
                 </div>
                 <div>
                     <label htmlFor="new_password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">New Password</label>
-                    <input type="password" id="new_password" placeholder="••••••••" className="mt-1 block w-full shadow-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600" />
+                    <input type="password" id="new_password" placeholder="••••••••" className="mt-1 block w-full shadow-sm rounded-md" />
                 </div>
                 <div>
                     <label htmlFor="confirm_password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Confirm New Password</label>
-                    <input type="password" id="confirm_password" placeholder="••••••••" className="mt-1 block w-full shadow-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600" />
+                    <input type="password" id="confirm_password" placeholder="••••••••" className="mt-1 block w-full shadow-sm rounded-md" />
                 </div>
              </div>
         </div>
         <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Save Changes</button>
     </div>
 );
+
+const GeneralSettings: React.FC = () => {
+    const { defaultCurrency, setDefaultCurrency } = useSettings();
+
+    return (
+        <div className="space-y-6 max-w-xl">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">General Settings</h3>
+            <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Default Currency</label>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">This will be the default currency for all new transactions.</p>
+                <CurrencySelector value={defaultCurrency} onChange={setDefaultCurrency} />
+            </div>
+        </div>
+    );
+};
 
 const availableRoles = ['Admin', 'User', 'Inventory Manager', 'Sales Representative', 'Warehouse Staff', 'Logistics'];
 
@@ -178,12 +196,12 @@ const AddEditUserModal: React.FC<{ isOpen: boolean; onClose: () => void; user: U
                                     type="checkbox"
                                     checked={formData.roles?.includes(role) || false}
                                     onChange={() => handleRoleChange(role)}
-                                    className="rounded text-indigo-600 focus:ring-indigo-500 dark:bg-gray-600 dark:border-gray-500"
+                                    className="rounded text-indigo-600 focus:ring-indigo-500"
                                 />
                                 <span className="text-sm">{role}</span>
                             </label>
                         ))}
-                    </select>
+                    </div>
                 </div>
 
                 <div>
@@ -312,7 +330,7 @@ const DatabaseSettings: React.FC = () => {
                 <select 
                     value={dbType}
                     onChange={(e) => setDbType(e.target.value)}
-                    className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 rounded-md"
+                    className="mt-1 block w-full shadow-sm rounded-md"
                 >
                     <option value="local">Local Server</option>
                     <option value="cloud">Cloud Server</option>
@@ -321,13 +339,13 @@ const DatabaseSettings: React.FC = () => {
             {dbType === 'local' && (
                  <div>
                     <label htmlFor="local_path" className="block text-sm font-medium text-gray-700 dark:text-gray-300">SQLite File Path</label>
-                    <input type="text" id="local_path" placeholder="/path/to/database.sqlite" className="mt-1 block w-full shadow-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600" />
+                    <input type="text" id="local_path" placeholder="/path/to/database.sqlite" className="mt-1 block w-full shadow-sm rounded-md" />
                 </div>
             )}
             {dbType === 'cloud' && (
                 <div>
                     <label htmlFor="cloud_string" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Connection String</label>
-                    <input type="text" id="cloud_string" placeholder="postgres://user:pass@host:port/dbname" className="mt-1 block w-full shadow-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600" />
+                    <input type="text" id="cloud_string" placeholder="postgres://user:pass@host:port/dbname" className="mt-1 block w-full shadow-sm rounded-md" />
                 </div>
             )}
              <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Save Connection</button>

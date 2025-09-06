@@ -1,11 +1,13 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import BarcodeScanner from '../components/BarcodeScanner';
+import ExportDropdown from '../components/ExportDropdown';
+import CurrencySelector from '../components/CurrencySelector';
 import { useData } from '../context/DataContext';
-import { Product } from '../types';
+import { Product, Currency } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../context/SettingsContext';
 import { QrCodeIcon, PlusIcon } from '../components/IconComponents';
 
 const AddEditProductModal: React.FC<{
@@ -15,6 +17,7 @@ const AddEditProductModal: React.FC<{
 }> = ({ isOpen, onClose, product }) => {
     
     const { addProduct, updateProduct } = useData();
+    const { defaultCurrency } = useSettings();
     const [formData, setFormData] = useState<Partial<Product>>({});
 
     useEffect(() => {
@@ -24,14 +27,19 @@ const AddEditProductModal: React.FC<{
             setFormData({
                 dateAdded: new Date().toISOString().split('T')[0],
                 qualityTestStatus: 'Pending',
-                status: 'In Stock'
+                status: 'In Stock',
+                currency: defaultCurrency,
             });
         }
-    }, [product, isOpen]);
+    }, [product, isOpen, defaultCurrency]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+    };
+    
+    const handleCurrencyChange = (currency: Currency) => {
+        setFormData(prev => ({ ...prev, currency }));
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -50,15 +58,15 @@ const AddEditProductModal: React.FC<{
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Product Name</label>
-                        <input type="text" name="name" value={formData.name || ''} onChange={handleChange} required className="mt-1 block w-full shadow-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600" />
+                        <input type="text" name="name" value={formData.name || ''} onChange={handleChange} required className="mt-1 block w-full shadow-sm rounded-md" />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">SKU</label>
-                        <input type="text" name="sku" value={formData.sku || ''} onChange={handleChange} required className="mt-1 block w-full shadow-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600" />
+                        <input type="text" name="sku" value={formData.sku || ''} onChange={handleChange} required className="mt-1 block w-full shadow-sm rounded-md" />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
-                        <select name="category" value={formData.category || ''} onChange={handleChange} required className="mt-1 block w-full shadow-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600">
+                        <select name="category" value={formData.category || ''} onChange={handleChange} required className="mt-1 block w-full shadow-sm rounded-md">
                             <option value="">Select Category</option>
                             <option value="Aggregates">Aggregates</option>
                             <option value="Binders">Binders</option>
@@ -68,7 +76,7 @@ const AddEditProductModal: React.FC<{
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Warehouse</label>
-                        <select name="warehouse" value={formData.warehouse || ''} onChange={handleChange} required className="mt-1 block w-full shadow-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600">
+                        <select name="warehouse" value={formData.warehouse || ''} onChange={handleChange} required className="mt-1 block w-full shadow-sm rounded-md">
                              <option value="">Select Warehouse</option>
                              <option value="Quarry Site A">Quarry Site A</option>
                              <option value="Main Plant">Main Plant</option>
@@ -79,11 +87,11 @@ const AddEditProductModal: React.FC<{
                      <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Stock Quantity</label>
-                            <input type="number" name="stock" value={formData.stock || ''} onChange={handleChange} required className="mt-1 block w-full shadow-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600" />
+                            <input type="number" name="stock" value={formData.stock || ''} onChange={handleChange} required className="mt-1 block w-full shadow-sm rounded-md" />
                         </div>
                          <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Unit of Measure</label>
-                             <select name="unitOfMeasure" value={formData.unitOfMeasure || ''} onChange={handleChange} required className="mt-1 block w-full shadow-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600">
+                             <select name="unitOfMeasure" value={formData.unitOfMeasure || ''} onChange={handleChange} required className="mt-1 block w-full shadow-sm rounded-md">
                                 <option value="">Select Unit</option>
                                 <option value="Ton">Ton</option>
                                 <option value="Cubic Meter">Cubic Meter</option>
@@ -92,21 +100,27 @@ const AddEditProductModal: React.FC<{
                             </select>
                         </div>
                     </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Price per Unit</label>
-                        <input type="number" name="price" step="0.01" value={formData.price || ''} onChange={handleChange} required className="mt-1 block w-full shadow-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600" />
+                     <div className="grid grid-cols-2 gap-4">
+                         <div>
+                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Price per Unit</label>
+                             <input type="number" name="price" step="0.01" value={formData.price || ''} onChange={handleChange} required className="mt-1 block w-full shadow-sm rounded-md" />
+                         </div>
+                         <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Currency</label>
+                            <CurrencySelector value={formData.currency || 'USD'} onChange={handleCurrencyChange} />
+                         </div>
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Supplier</label>
-                        <input type="text" name="supplier" value={formData.supplier || ''} onChange={handleChange} className="mt-1 block w-full shadow-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600" />
+                        <input type="text" name="supplier" value={formData.supplier || ''} onChange={handleChange} className="mt-1 block w-full shadow-sm rounded-md" />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Batch Number</label>
-                        <input type="text" name="batchNumber" value={formData.batchNumber || ''} onChange={handleChange} className="mt-1 block w-full shadow-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600" />
+                        <input type="text" name="batchNumber" value={formData.batchNumber || ''} onChange={handleChange} className="mt-1 block w-full shadow-sm rounded-md" />
                     </div>
                      <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Quality Test Status</label>
-                         <select name="qualityTestStatus" value={formData.qualityTestStatus || ''} onChange={handleChange} required className="mt-1 block w-full shadow-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600">
+                         <select name="qualityTestStatus" value={formData.qualityTestStatus || ''} onChange={handleChange} required className="mt-1 block w-full shadow-sm rounded-md">
                             <option value="Pending">Pending</option>
                             <option value="Passed">Passed</option>
                             <option value="Failed">Failed</option>
@@ -114,7 +128,7 @@ const AddEditProductModal: React.FC<{
                     </div>
                      <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Date Added</label>
-                        <input type="date" name="dateAdded" value={formData.dateAdded || ''} onChange={handleChange} required className="mt-1 block w-full shadow-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600" />
+                        <input type="date" name="dateAdded" value={formData.dateAdded || ''} onChange={handleChange} required className="mt-1 block w-full shadow-sm rounded-md" />
                     </div>
                 </div>
 
@@ -128,6 +142,26 @@ const AddEditProductModal: React.FC<{
 };
 
 
+// Custom hook for debouncing a value.
+function useDebounce<T>(value: T, delay: number): T {
+    const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+    useEffect(() => {
+        // Set up a timer to update the debounced value after the specified delay.
+        const handler = setTimeout(() => {
+            setDebouncedValue(value);
+        }, delay);
+
+        // Clean up the timer if the value or delay changes before the timer fires.
+        return () => {
+            clearTimeout(handler);
+        };
+    }, [value, delay]); // Only re-call effect if value or delay changes
+
+    return debouncedValue;
+}
+
+
 const InventoryPage: React.FC = () => {
     const { currentUser } = useAuth();
     const { products } = useData();
@@ -135,18 +169,13 @@ const InventoryPage: React.FC = () => {
     const [isModalOpen, setModalOpen] = useState(false);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     
+    // State for user inputs
     const [searchTerm, setSearchTerm] = useState('');
-    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
     const [categoryFilter, setCategoryFilter] = useState('All');
 
-    useEffect(() => {
-        const handler = setTimeout(() => {
-            setDebouncedSearchTerm(searchTerm);
-        }, 300);
-
-        return () => clearTimeout(handler);
-    }, [searchTerm]);
+    // Debounce the search term to avoid excessive re-renders on each keystroke
+    const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
     const filteredProducts = useMemo(() => {
         return products
@@ -175,7 +204,7 @@ const InventoryPage: React.FC = () => {
         { header: 'Product Name', accessor: 'name' as keyof Product, sortable: true },
         { header: 'Category', accessor: 'category' as keyof Product, sortable: true },
         { header: 'Stock', accessor: 'stock' as keyof Product, sortable: true, render: (item: Product) => `${item.stock.toLocaleString()} ${item.unitOfMeasure}` },
-        { header: 'Price', accessor: 'price' as keyof Product, sortable: true, render: (item: Product) => `$${item.price.toFixed(2)}` },
+        { header: 'Price', accessor: 'price' as keyof Product, sortable: true, render: (item: Product) => `${item.currency} ${item.price.toFixed(2)}` },
         { header: 'Warehouse', accessor: 'warehouse' as keyof Product, sortable: true },
         { header: 'Batch No.', accessor: 'batchNumber' as keyof Product, sortable: true },
         { header: 'Status', accessor: 'status' as keyof Product, sortable: true, render: (item: Product) => {
@@ -192,17 +221,24 @@ const InventoryPage: React.FC = () => {
         }},
     ];
 
+    const exportColumns = columns.map(c => ({ header: c.header, accessor: c.accessor }));
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                 <h2 className="text-3xl font-bold text-gray-800 dark:text-white">Inventory</h2>
                 <div className="flex items-center space-x-2">
-                    <button onClick={() => setScannerOpen(true)} className="flex items-center px-4 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
+                    <button onClick={() => setScannerOpen(true)} className="flex items-center px-4 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors no-print">
                         <QrCodeIcon className="w-5 h-5 mr-2" />
                         Scan
                     </button>
+                     <ExportDropdown
+                        data={filteredProducts}
+                        columns={exportColumns}
+                        fileName="Inventory_Report"
+                    />
                     {currentUser?.roles.includes('Admin') && (
-                        <button onClick={handleAddProduct} className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                        <button onClick={handleAddProduct} className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors no-print">
                             <PlusIcon className="w-5 h-5 mr-2" />
                             Add Product
                         </button>
@@ -210,29 +246,29 @@ const InventoryPage: React.FC = () => {
                 </div>
             </div>
 
-            <div className="p-4 bg-white dark:bg-gray-800 rounded-xl shadow-lg space-y-4 md:space-y-0 md:flex md:items-center md:justify-between">
+            <div className="p-4 bg-white dark:bg-gray-800 rounded-xl shadow-lg space-y-4 md:space-y-0 md:flex md:items-center md:justify-between no-print">
                 <input 
                     type="text"
                     placeholder="Search by name or SKU..."
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
-                    className="w-full md:w-1/3 shadow-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"
+                    className="w-full md:w-1/3 shadow-sm rounded-md"
                 />
                 <div className="flex items-center space-x-4">
-                    <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="shadow-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600">
+                    <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="shadow-sm rounded-md">
                         <option value="All">All Statuses</option>
                         <option value="In Stock">In Stock</option>
                         <option value="Low Stock">Low Stock</option>
                         <option value="Out of Stock">Out of Stock</option>
                     </select>
-                    <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} className="shadow-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600">
+                    <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} className="shadow-sm rounded-md">
                         {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                     </select>
                 </div>
             </div>
 
             <DataTable columns={columns} data={filteredProducts} renderActions={currentUser?.roles.includes('Admin') ? (product) => (
-                 <div className="space-x-2">
+                 <div className="space-x-2 no-print">
                     <button onClick={() => handleEditProduct(product)} className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium">Edit</button>
                     <button className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 font-medium">Delete</button>
                 </div>

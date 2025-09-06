@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useData } from '../context/DataContext';
@@ -29,7 +28,17 @@ const DashboardPage: React.FC = () => {
     const totalStock = products.reduce((sum, p) => sum + p.stock, 0);
     const lowStockItems = products.filter(p => p.status === 'Low Stock');
     const outOfStockItems = products.filter(p => p.status === 'Out of Stock');
-    const totalRevenue = salesOrders.filter(o => o.status === 'Fulfilled').reduce((sum, o) => sum + o.total, 0);
+    const totalRevenueByCurrency = salesOrders
+        .filter(o => o.status === 'Fulfilled')
+        .reduce((acc, o) => {
+            acc[o.currency] = (acc[o.currency] || 0) + o.total;
+            return acc;
+        }, {} as Record<string, number>);
+
+    const revenueString = Object.entries(totalRevenueByCurrency)
+        .map(([currency, total]) => `${currency} ${(total / 1000).toFixed(1)}k`)
+        .join(' | ');
+
 
     const CustomTooltip = ({ active, payload, label }: any) => {
         if (active && payload && payload.length) {
@@ -50,7 +59,7 @@ const DashboardPage: React.FC = () => {
 
             {/* Stat Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard title="Total Revenue" value={`$${(totalRevenue/1000).toFixed(1)}k`} icon={<SalesIcon className="w-6 h-6 text-indigo-500" />} change="+12.5% this month" changeType="increase"/>
+                <StatCard title="Total Revenue" value={revenueString || '$0.0k'} icon={<SalesIcon className="w-6 h-6 text-indigo-500" />} change="+12.5% this month" changeType="increase"/>
                 <StatCard title="Total Stock Units" value={totalStock.toLocaleString()} icon={<InventoryIcon className="w-6 h-6 text-indigo-500" />} change="-1.2% this month" changeType="decrease" />
                 <StatCard title="Pending Sales" value={String(salesOrders.filter(o => o.status === 'Pending').length)} icon={<SalesIcon className="w-6 h-6 text-indigo-500" />} />
                 <StatCard title="Pending Purchases" value={String(purchaseOrders.filter(o => o.status === 'Pending').length)} icon={<PurchasesIcon className="w-6 h-6 text-indigo-500" />} />

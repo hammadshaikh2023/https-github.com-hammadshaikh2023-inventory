@@ -24,23 +24,23 @@ const AddWarehouseModal: React.FC<{
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Warehouse Name</label>
-                        <input type="text" name="name" required className="mt-1 block w-full shadow-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600" />
+                        <input type="text" name="name" required className="mt-1 block w-full shadow-sm rounded-md" />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Location (City, State)</label>
-                        <input type="text" name="location" required className="mt-1 block w-full shadow-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600" />
+                        <input type="text" name="location" required className="mt-1 block w-full shadow-sm rounded-md" />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Capacity (Tons)</label>
-                        <input type="number" name="capacity" required className="mt-1 block w-full shadow-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600" />
+                        <input type="number" name="capacity" required className="mt-1 block w-full shadow-sm rounded-md" />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Manager</label>
-                        <input type="text" name="manager" required className="mt-1 block w-full shadow-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600" />
+                        <input type="text" name="manager" required className="mt-1 block w-full shadow-sm rounded-md" />
                     </div>
                     <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Contact Phone</label>
-                        <input type="tel" name="contact" required className="mt-1 block w-full shadow-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600" />
+                        <input type="tel" name="contact" required className="mt-1 block w-full shadow-sm rounded-md" />
                     </div>
                 </div>
                  <div className="flex justify-end pt-4 space-x-2 border-t dark:border-gray-700 mt-4">
