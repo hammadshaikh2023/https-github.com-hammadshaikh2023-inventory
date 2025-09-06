@@ -1,0 +1,28 @@
+{
+  "short_name": "BWS Inventory",
+  "name": "BWS Inventory Management System",
+  "description": "A comprehensive inventory management system for small to medium-sized businesses, featuring real-time tracking, order management, reporting, and PWA capabilities for cross-platform support.",
+  "icons": [
+    {
+      "src": "https://picsum.photos/192",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://picsum.photos/512",
+      "type": "image/png",
+      "sizes": "512x512"
+    },
+    {
+      "src": "https://picsum.photos/512",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
+    }
+  ],
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "theme_color": "#4f46e5",
+  "background_color": "#ffffff"
+}
