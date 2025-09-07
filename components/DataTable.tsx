@@ -85,26 +85,37 @@ const DataTable = <T extends { id: string },>(
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                        {paginatedData.map((item, index) => (
-                            <tr 
-                                key={item.id} 
-                                className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150 animate-slideInUp"
-                                style={{ animationDelay: `${index * 30}ms`, animationFillMode: 'backwards' }}
-                            >
-                                {columns.map((col) => (
-                                    <td key={String(col.accessor)} className="px-6 py-4 whitespace-nowrap">
-                                        <span className="text-gray-900 dark:text-gray-200">
-                                          {col.render ? col.render(item) : (item[col.accessor] as React.ReactNode)}
-                                        </span>
-                                    </td>
-                                ))}
-                                {renderActions && (
-                                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                                        {renderActions(item)}
-                                    </td>
-                                )}
+                        {paginatedData.length > 0 ? (
+                            paginatedData.map((item, index) => (
+                                <tr 
+                                    key={item.id} 
+                                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150 animate-slideInUp"
+                                    style={{ animationDelay: `${index * 30}ms`, animationFillMode: 'backwards' }}
+                                >
+                                    {columns.map((col) => (
+                                        <td key={String(col.accessor)} className="px-6 py-4 whitespace-nowrap">
+                                            <span className="text-gray-900 dark:text-gray-200">
+                                              {col.render ? col.render(item) : (item[col.accessor] as React.ReactNode)}
+                                            </span>
+                                        </td>
+                                    ))}
+                                    {renderActions && (
+                                        <td className="px-6 py-4 whitespace-nowrap text-right">
+                                            {renderActions(item)}
+                                        </td>
+                                    )}
+                                </tr>
+                            ))
+                        ) : (
+                             <tr>
+                                <td 
+                                    colSpan={columns.length + (renderActions ? 1 : 0)} 
+                                    className="px-6 py-10 text-center text-gray-500 dark:text-gray-400"
+                                >
+                                    No data available.
+                                </td>
                             </tr>
-                        ))}
+                        )}
                     </tbody>
                 </table>
             </div>

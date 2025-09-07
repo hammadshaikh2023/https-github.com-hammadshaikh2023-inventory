@@ -21,6 +21,10 @@ export const mockSalesOrders: SalesOrder[] = [
         items: [
             { productId: 'P001', productName: 'Type A Gravel (1.5")', quantity: 1500, price: 25.50 },
             { productId: 'P002', productName: 'Asphalt Mix (Fine Grade)', quantity: 1500, price: 150.00 },
+        ],
+        history: [
+            { timestamp: '2023-10-28 10:05:00', user: 'Kyle Reese', action: 'Status changed to Fulfilled' },
+            { timestamp: '2023-10-26 09:00:00', user: 'Admin User', action: 'Order Created' }
         ]
     },
     { 
@@ -32,6 +36,9 @@ export const mockSalesOrders: SalesOrder[] = [
         status: 'Pending',
         items: [
             { productId: 'P002', productName: 'Asphalt Mix (Fine Grade)', quantity: 750, price: 150.00 },
+        ],
+        history: [
+            { timestamp: '2023-10-27 11:30:00', user: 'Sarah Connor', action: 'Order Created' }
         ]
     },
 ];
@@ -46,6 +53,10 @@ export const mockPurchaseOrders: PurchaseOrder[] = [
         status: 'Received',
         items: [
             { productId: 'P005', productName: 'Liquid Asphalt Binder', quantity: 200, price: 890.00 },
+        ],
+        history: [
+            { timestamp: '2023-10-20 15:00:00', user: 'Sarah Connor', action: 'Status changed to Received' },
+            { timestamp: '2023-10-20 10:00:00', user: 'Sarah Connor', action: 'Order Created' }
         ]
     },
     { 
@@ -57,6 +68,9 @@ export const mockPurchaseOrders: PurchaseOrder[] = [
         status: 'Pending',
         items: [
             { productId: 'P003', productName: 'Washed Concrete Sand', quantity: 1000, price: 45.00 },
+        ],
+        history: [
+            { timestamp: '2023-10-22 16:00:00', user: 'Sarah Connor', action: 'Order Created' }
         ]
     },
 ];

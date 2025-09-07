@@ -109,7 +109,7 @@ const ProfileSettings: React.FC = () => (
 );
 
 const GeneralSettings: React.FC = () => {
-    const { defaultCurrency, setDefaultCurrency } = useSettings();
+    const { defaultCurrency, setDefaultCurrency, lowStockThreshold, setLowStockThreshold } = useSettings();
 
     return (
         <div className="space-y-6 max-w-xl">
@@ -118,6 +118,17 @@ const GeneralSettings: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Default Currency</label>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">This will be the default currency for all new transactions.</p>
                 <CurrencySelector value={defaultCurrency} onChange={setDefaultCurrency} />
+            </div>
+            <div className="pt-4 border-t dark:border-gray-700">
+                <label htmlFor="low-stock-threshold" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Low Stock Threshold</label>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Set the stock level at which products are considered "Low Stock".</p>
+                <input
+                    type="number"
+                    id="low-stock-threshold"
+                    value={lowStockThreshold}
+                    onChange={(e) => setLowStockThreshold(Number(e.target.value))}
+                    className="mt-1 block w-full max-w-xs shadow-sm rounded-md"
+                />
             </div>
         </div>
     );

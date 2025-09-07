@@ -15,11 +15,13 @@ const CreatePurchaseOrderModal: React.FC<{
     onClose: () => void;
 }> = ({ isOpen, onClose }) => {
     const { products, addPurchaseOrder } = useData();
+    const { currentUser } = useAuth();
     const { defaultCurrency } = useSettings();
     const [vendorName, setVendorName] = useState('');
     const [orderDate, setOrderDate] = useState(new Date().toISOString().split('T')[0]);
     const [currency, setCurrency] = useState<Currency>(defaultCurrency);
     const [items, setItems] = useState<Partial<OrderItem & { productNameSearch?: string }>>([{ productId: '', quantity: 1, price: 0 }]);
+    const [itemErrors, setItemErrors] = useState<Record<number, string | null>>({});
 
     useEffect(() => {
         if (isOpen) {
@@ -27,6 +29,7 @@ const CreatePurchaseOrderModal: React.FC<{
             setVendorName('');
             setItems([{ productId: '', quantity: 1, price: 0 }]);
             setOrderDate(new Date().toISOString().split('T')[0]);
+            setItemErrors({});
         }
     }, [isOpen, defaultCurrency]);
 
@@ -35,15 +38,30 @@ const CreatePurchaseOrderModal: React.FC<{
         const currentItem = { ...newItems[index] };
 
         if (field === 'productNameSearch') {
+            currentItem.productNameSearch = value;
             const product = products.find(p => p.name.toLowerCase() === value.toLowerCase());
             if (product) {
                 currentItem.productId = product.id;
                 currentItem.productName = product.name;
                 currentItem.price = product.price; // Auto-populate price
+            } else {
+                currentItem.productId = '';
+                currentItem.productName = '';
+                currentItem.price = 0;
             }
-             currentItem.productNameSearch = value;
-        } else if (field === 'price' || field === 'quantity') {
-             currentItem[field] = parseFloat(value) || 0;
+        } else if (field === 'quantity') {
+            const numValue = Number(value);
+            if (value !== '' && (!Number.isInteger(numValue) || numValue <= 0)) {
+                setItemErrors(prev => ({...prev, [index]: 'Must be a positive number.'}));
+            } else {
+                const newErrors = {...itemErrors};
+                delete newErrors[index];
+                setItemErrors(newErrors);
+            }
+            currentItem.quantity = value === '' ? undefined : parseInt(value, 10);
+            
+        } else if (field === 'price') {
+            currentItem.price = parseFloat(value) || 0;
         }
         
         newItems[index] = currentItem;
@@ -60,12 +78,33 @@ const CreatePurchaseOrderModal: React.FC<{
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        let hasErrors = false;
+        const newErrors: Record<number, string | null> = {};
+        items.forEach((item, index) => {
+            if (item.productId && (!item.quantity || item.quantity <= 0)) {
+                newErrors[index] = 'Must be a positive number.';
+                hasErrors = true;
+            }
+        });
+
+        if (hasErrors) {
+            setItemErrors(newErrors);
+            alert("Please fix invalid quantities before submitting.");
+            return;
+        }
+
         const finalItems = items
             .filter(i => i.productId && i.quantity && typeof i.price !== 'undefined')
             .map(i => i as OrderItem);
 
         if (finalItems.length === 0) {
             alert("Please add at least one valid item to the order.");
+            return;
+        }
+        
+        if (!currentUser) {
+            alert("No user logged in.");
             return;
         }
 
@@ -77,10 +116,12 @@ const CreatePurchaseOrderModal: React.FC<{
             date: orderDate,
             currency: currency,
             items: finalItems,
-        });
+        }, currentUser.name);
 
         onClose();
     };
+
+    const hasErrors = Object.values(itemErrors).some(error => error !== null);
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Create New Purchase Order">
@@ -110,7 +151,7 @@ const CreatePurchaseOrderModal: React.FC<{
                 </div>
                 <div className="space-y-3 max-h-60 overflow-y-auto pr-2 pt-2">
                     {items.map((item, index) => (
-                        <div key={index} className="grid grid-cols-12 items-center gap-2">
+                        <div key={index} className="grid grid-cols-12 items-start gap-2">
                             <div className="col-span-5">
                                 <input
                                     list="product-list"
@@ -119,23 +160,27 @@ const CreatePurchaseOrderModal: React.FC<{
                                     placeholder="Search product..."
                                 />
                             </div>
-                            <input
-                                type="number"
-                                placeholder="Qty"
-                                min="1"
-                                value={item.quantity}
-                                onChange={e => handleItemChange(index, 'quantity', e.target.value)}
-                                className="col-span-2"
-                            />
-                            <input
-                                type="number"
-                                placeholder="Price"
-                                step="0.01"
-                                min="0"
-                                value={item.price}
-                                onChange={e => handleItemChange(index, 'price', e.target.value)}
-                                className="col-span-2"
-                            />
+                            <div className="col-span-2">
+                                <input
+                                    type="number"
+                                    placeholder="Qty"
+                                    min="1"
+                                    step="1"
+                                    value={item.quantity ?? ''}
+                                    onChange={e => handleItemChange(index, 'quantity', e.target.value)}
+                                />
+                                {itemErrors[index] && <p className="text-red-500 text-xs mt-1">{itemErrors[index]}</p>}
+                            </div>
+                            <div className="col-span-2">
+                                <input
+                                    type="number"
+                                    placeholder="Price"
+                                    step="0.01"
+                                    min="0"
+                                    value={item.price ?? ''}
+                                    onChange={e => handleItemChange(index, 'price', e.target.value)}
+                                />
+                            </div>
                             <div className="col-span-2 text-sm text-right pr-2 text-gray-800 dark:text-gray-200">
                                 <span className="font-medium">
                                     {(item.quantity && typeof item.price !== 'undefined' ? (item.quantity * item.price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00')}
@@ -152,11 +197,76 @@ const CreatePurchaseOrderModal: React.FC<{
 
                 <div className="flex justify-end pt-4 space-x-2 border-t dark:border-gray-700 mt-4">
                     <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500">Cancel</button>
-                    <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Create Order</button>
+                    <button type="submit" disabled={hasErrors} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed">Create Order</button>
                 </div>
             </form>
         </Modal>
     )
+};
+
+const ViewPurchaseOrderModal: React.FC<{
+    isOpen: boolean;
+    onClose: () => void;
+    order: PurchaseOrder | null;
+}> = ({ isOpen, onClose, order }) => {
+    const { updatePurchaseOrderStatus } = useData();
+    const { currentUser } = useAuth();
+    if (!order) return null;
+
+    const handleStatusChange = (newStatus: PurchaseOrder['status']) => {
+        if (order && currentUser) {
+            updatePurchaseOrderStatus(order.id, newStatus, currentUser.name);
+        }
+        onClose();
+    };
+
+    return (
+        <Modal isOpen={isOpen} onClose={onClose} title={`Purchase Order: ${order.id}`}>
+            <div className="space-y-4">
+                <div>
+                    <h4 className="font-semibold text-gray-800 dark:text-white">Vendor Information</h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">{order.vendor.name}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">{order.vendor.contactPerson}</p>
+                </div>
+                <div>
+                    <h4 className="font-semibold text-gray-800 dark:text-white">Order Items</h4>
+                    <ul className="divide-y divide-gray-200 dark:divide-gray-700 mt-2">
+                        {order.items.map(item => (
+                            <li key={item.productId} className="py-2 flex justify-between">
+                                <span className="text-sm text-gray-600 dark:text-gray-300">{item.productName} (x{item.quantity})</span>
+                                <span className="text-sm font-medium text-gray-800 dark:text-white">{order.currency} {(item.quantity * item.price).toFixed(2)}</span>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+                <div>
+                    <h4 className="font-semibold text-gray-800 dark:text-white mt-4 pt-4 border-t dark:border-gray-700">Order History</h4>
+                    <ul className="mt-2 space-y-2 max-h-40 overflow-y-auto">
+                        {order.history.map((entry, index) => (
+                            <li key={index} className="flex items-center text-sm">
+                                <div className="flex-shrink-0 w-32 text-gray-500 dark:text-gray-400 text-xs">
+                                    {new Date(entry.timestamp).toLocaleString()}
+                                </div>
+                                <div className="ml-4">
+                                    <p className="font-medium text-gray-700 dark:text-gray-200">{entry.action}</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">by {entry.user}</p>
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+                <div className="flex justify-between items-center pt-4 border-t dark:border-gray-700">
+                    <p className="font-semibold text-gray-800 dark:text-white">Total: {order.currency} {order.total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                    { currentUser?.roles.includes('Admin') && order.status === 'Pending' && (
+                        <div className="flex space-x-2">
+                            <button onClick={() => handleStatusChange('Cancelled')} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Cancel Order</button>
+                            <button onClick={() => handleStatusChange('Received')} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Mark as Received</button>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </Modal>
+    );
 };
 
 
@@ -164,6 +274,13 @@ const PurchasesPage: React.FC = () => {
     const { currentUser } = useAuth();
     const { purchaseOrders } = useData();
     const [isCreateModalOpen, setCreateModalOpen] = useState(false);
+    const [isViewModalOpen, setViewModalOpen] = useState(false);
+    const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null);
+
+    const handleViewOrder = (order: PurchaseOrder) => {
+        setSelectedOrder(order);
+        setViewModalOpen(true);
+    };
 
     const columns = [
         { header: 'Order ID', accessor: 'id' as keyof PurchaseOrder, sortable: true },
@@ -198,12 +315,13 @@ const PurchasesPage: React.FC = () => {
                     )}
                 </div>
             </div>
-            <DataTable columns={columns} data={purchaseOrders} renderActions={() => (
+            <DataTable columns={columns} data={purchaseOrders} renderActions={(order) => (
                 <div className="space-x-2 no-print">
-                    <button className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium">View</button>
+                    <button onClick={() => handleViewOrder(order)} className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium">View Details</button>
                 </div>
             )} />
             <CreatePurchaseOrderModal isOpen={isCreateModalOpen} onClose={() => setCreateModalOpen(false)} />
+            <ViewPurchaseOrderModal isOpen={isViewModalOpen} onClose={() => setViewModalOpen(false)} order={selectedOrder} />
         </div>
     );
 };

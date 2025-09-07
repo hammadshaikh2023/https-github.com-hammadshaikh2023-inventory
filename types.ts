@@ -24,6 +24,12 @@ export interface OrderItem {
     price: number;
 }
 
+export interface HistoryEntry {
+  timestamp: string;
+  action: string;
+  user: string;
+}
+
 export interface SalesOrder {
   id: string;
   customer: {
@@ -36,6 +42,7 @@ export interface SalesOrder {
   currency: Currency;
   status: 'Fulfilled' | 'Pending' | 'Cancelled';
   items: OrderItem[];
+  history: HistoryEntry[];
 }
 
 export interface PurchaseOrder {
@@ -49,6 +56,7 @@ export interface PurchaseOrder {
     currency: Currency;
     status: 'Received' | 'Pending' | 'Cancelled';
     items: OrderItem[];
+    history: HistoryEntry[];
 }
 
 export interface Warehouse {
@@ -79,4 +87,15 @@ export interface AuditLog {
     type: 'Sales' | 'Purchase' | 'Inventory' | 'User Management';
     action: string;
     details: string;
+}
+
+export interface GatePass {
+    gatePassId: string;
+    orderId: string; // Links to SalesOrder.id
+    issueDate: string;
+    driverName: string;
+    driverContact: string;
+    driverIdNumber: string;
+    driverLicenseNumber: string;
+    vehicleNumber: string;
 }

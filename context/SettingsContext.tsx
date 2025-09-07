@@ -4,6 +4,8 @@ import { Currency } from '../types';
 interface SettingsContextType {
     defaultCurrency: Currency;
     setDefaultCurrency: (currency: Currency) => void;
+    lowStockThreshold: number;
+    setLowStockThreshold: (threshold: number) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -13,16 +15,28 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
         return localStorage.getItem('defaultCurrency') || 'USD';
     });
 
+    const [lowStockThreshold, setLowStockThresholdState] = useState<number>(() => {
+        return Number(localStorage.getItem('lowStockThreshold')) || 1000;
+    });
+
     useEffect(() => {
         localStorage.setItem('defaultCurrency', defaultCurrency);
     }, [defaultCurrency]);
 
+    useEffect(() => {
+        localStorage.setItem('lowStockThreshold', String(lowStockThreshold));
+    }, [lowStockThreshold]);
+
     const setDefaultCurrency = (currency: Currency) => {
         setDefaultCurrencyState(currency);
     };
+    
+    const setLowStockThreshold = (threshold: number) => {
+        setLowStockThresholdState(threshold);
+    };
 
     return (
-        <SettingsContext.Provider value={{ defaultCurrency, setDefaultCurrency }}>
+        <SettingsContext.Provider value={{ defaultCurrency, setDefaultCurrency, lowStockThreshold, setLowStockThreshold }}>
             {children}
         </SettingsContext.Provider>
     );

@@ -14,18 +14,21 @@ const CreateSalesOrderModal: React.FC<{
     onClose: () => void;
 }> = ({ isOpen, onClose }) => {
     const { products, addSalesOrder } = useData();
+    const { currentUser } = useAuth();
     const { defaultCurrency } = useSettings();
     const [customerName, setCustomerName] = useState('');
     const [orderDate, setOrderDate] = useState(new Date().toISOString().split('T')[0]);
     const [currency, setCurrency] = useState<Currency>(defaultCurrency);
-    const [items, setItems] = useState<Partial<OrderItem & { productNameSearch?: string }>>([{ productId: '', quantity: 1 }]);
+    const [items, setItems] = useState<Partial<OrderItem & { productNameSearch?: string }>>([{ productId: '', quantity: 1, price: 0 }]);
+    const [itemErrors, setItemErrors] = useState<Record<number, string | null>>({});
 
     useEffect(() => {
         if (isOpen) {
             setCurrency(defaultCurrency);
             setCustomerName('');
-            setItems([{ productId: '', quantity: 1 }]);
+            setItems([{ productId: '', quantity: 1, price: 0 }]);
             setOrderDate(new Date().toISOString().split('T')[0]);
+            setItemErrors({});
         }
     }, [isOpen, defaultCurrency]);
 
@@ -35,15 +38,30 @@ const CreateSalesOrderModal: React.FC<{
         const currentItem = { ...newItems[index] };
 
         if (field === 'productNameSearch') {
+            currentItem.productNameSearch = value;
             const product = products.find(p => p.name.toLowerCase() === value.toLowerCase());
             if (product) {
                 currentItem.productId = product.id;
                 currentItem.productName = product.name;
                 currentItem.price = product.price;
+            } else {
+                currentItem.productId = '';
+                currentItem.productName = '';
+                currentItem.price = 0;
             }
-            currentItem.productNameSearch = value;
-        } else if (field === 'price' || field === 'quantity') {
-             currentItem[field] = parseFloat(value) || 0;
+        } else if (field === 'quantity') {
+            const numValue = Number(value);
+            if (value !== '' && (!Number.isInteger(numValue) || numValue <= 0)) {
+                setItemErrors(prev => ({...prev, [index]: 'Must be a positive number.'}));
+            } else {
+                const newErrors = {...itemErrors};
+                delete newErrors[index];
+                setItemErrors(newErrors);
+            }
+            currentItem.quantity = value === '' ? undefined : parseInt(value, 10);
+
+        } else if (field === 'price') {
+            currentItem.price = parseFloat(value) || 0;
         }
         
         newItems[index] = currentItem;
@@ -52,7 +70,7 @@ const CreateSalesOrderModal: React.FC<{
 
 
     const addItem = () => {
-        setItems([...items, { productId: '', quantity: 1 }]);
+        setItems([...items, { productId: '', quantity: 1, price: 0 }]);
     };
     
     const removeItem = (index: number) => {
@@ -61,6 +79,22 @@ const CreateSalesOrderModal: React.FC<{
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        
+        let hasErrors = false;
+        const newErrors: Record<number, string | null> = {};
+        items.forEach((item, index) => {
+            if (item.productId && (!item.quantity || item.quantity <= 0)) {
+                newErrors[index] = 'Must be a positive number.';
+                hasErrors = true;
+            }
+        });
+
+        if (hasErrors) {
+            setItemErrors(newErrors);
+            alert("Please fix invalid quantities before submitting.");
+            return;
+        }
+
         const finalItems = items
             .filter(i => i.productId && i.quantity && typeof i.price !== 'undefined')
             .map(i => i as OrderItem);
@@ -70,6 +104,11 @@ const CreateSalesOrderModal: React.FC<{
             return;
         }
 
+        if (!currentUser) {
+            alert("No user logged in.");
+            return;
+        }
+        
         addSalesOrder({
             customer: {
                 name: customerName,
@@ -79,9 +118,11 @@ const CreateSalesOrderModal: React.FC<{
             date: orderDate,
             currency: currency,
             items: finalItems,
-        });
+        }, currentUser.name);
         onClose();
     };
+
+    const hasErrors = Object.values(itemErrors).some(error => error !== null);
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Create New Sales Order">
@@ -111,7 +152,7 @@ const CreateSalesOrderModal: React.FC<{
                 </div>
                 <div className="space-y-3 max-h-60 overflow-y-auto pr-2 pt-2">
                     {items.map((item, index) => (
-                        <div key={index} className="grid grid-cols-12 items-center gap-2">
+                        <div key={index} className="grid grid-cols-12 items-start gap-2">
                             <div className="col-span-5">
                                 <input
                                     list="product-list"
@@ -120,23 +161,27 @@ const CreateSalesOrderModal: React.FC<{
                                     placeholder="Search product..."
                                 />
                             </div>
-                            <input
-                                type="number"
-                                placeholder="Qty"
-                                min="1"
-                                value={item.quantity}
-                                onChange={e => handleItemChange(index, 'quantity', e.target.value)}
-                                className="col-span-2"
-                            />
-                            <input
-                                type="number"
-                                placeholder="Price"
-                                step="0.01"
-                                min="0"
-                                value={item.price}
-                                onChange={e => handleItemChange(index, 'price', e.target.value)}
-                                className="col-span-2"
-                            />
+                            <div className="col-span-2">
+                                <input
+                                    type="number"
+                                    placeholder="Qty"
+                                    min="1"
+                                    step="1"
+                                    value={item.quantity ?? ''}
+                                    onChange={e => handleItemChange(index, 'quantity', e.target.value)}
+                                />
+                                {itemErrors[index] && <p className="text-red-500 text-xs mt-1">{itemErrors[index]}</p>}
+                            </div>
+                            <div className="col-span-2">
+                                <input
+                                    type="number"
+                                    placeholder="Price"
+                                    step="0.01"
+                                    min="0"
+                                    value={item.price ?? ''}
+                                    onChange={e => handleItemChange(index, 'price', e.target.value)}
+                                />
+                            </div>
                             <div className="col-span-2 text-sm text-right pr-2 text-gray-800 dark:text-gray-200">
                                 <span className="font-medium">
                                     {(item.quantity && typeof item.price !== 'undefined' ? (item.quantity * item.price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00')}
@@ -154,7 +199,7 @@ const CreateSalesOrderModal: React.FC<{
 
                 <div className="flex justify-end pt-4 space-x-2 border-t dark:border-gray-700 mt-4">
                     <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500">Cancel</button>
-                    <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Create Order</button>
+                    <button type="submit" disabled={hasErrors} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed">Create Order</button>
                 </div>
             </form>
         </Modal>
@@ -167,7 +212,17 @@ const ViewSalesOrderModal: React.FC<{
     onClose: () => void;
     order: SalesOrder | null;
 }> = ({ isOpen, onClose, order }) => {
+    const { updateSalesOrderStatus } = useData();
+    const { currentUser } = useAuth();
+
     if (!order) return null;
+
+    const handleStatusChange = (newStatus: SalesOrder['status']) => {
+        if (order && currentUser) {
+            updateSalesOrderStatus(order.id, newStatus, currentUser.name);
+        }
+        onClose();
+    };
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={`Order Details: ${order.id}`}>
@@ -189,8 +244,30 @@ const ViewSalesOrderModal: React.FC<{
                         ))}
                     </ul>
                 </div>
-                <div className="flex justify-end pt-4 border-t dark:border-gray-700">
+                 <div>
+                    <h4 className="font-semibold text-gray-800 dark:text-white mt-4 pt-4 border-t dark:border-gray-700">Order History</h4>
+                    <ul className="mt-2 space-y-2 max-h-40 overflow-y-auto">
+                        {order.history.map((entry, index) => (
+                            <li key={index} className="flex items-center text-sm">
+                                <div className="flex-shrink-0 w-32 text-gray-500 dark:text-gray-400 text-xs">
+                                    {new Date(entry.timestamp).toLocaleString()}
+                                </div>
+                                <div className="ml-4">
+                                    <p className="font-medium text-gray-700 dark:text-gray-200">{entry.action}</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">by {entry.user}</p>
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+                <div className="flex justify-between items-center pt-4 border-t dark:border-gray-700">
                     <p className="font-semibold text-gray-800 dark:text-white">Total: {order.currency} {order.total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                     { currentUser?.roles.includes('Admin') && order.status === 'Pending' && (
+                        <div className="flex space-x-2">
+                            <button onClick={() => handleStatusChange('Cancelled')} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Cancel Order</button>
+                            <button onClick={() => handleStatusChange('Fulfilled')} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Mark as Fulfilled</button>
+                        </div>
+                    )}
                 </div>
             </div>
         </Modal>
@@ -243,14 +320,12 @@ const SalesPage: React.FC = () => {
                 </div>
             </div>
             <DataTable columns={columns} data={salesOrders} renderActions={(order) => (
-                <div className="space-x-2 no-print">
-                    <button onClick={() => handleViewOrder(order)} className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium">View</button>
-                    {currentUser?.roles.includes('Admin') && <button className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 font-medium">Cancel</button>}
+                 <div className="space-x-2 no-print">
+                    <button onClick={() => handleViewOrder(order)} className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium">View Details</button>
                 </div>
             )} />
-
-            <ViewSalesOrderModal isOpen={isViewModalOpen} onClose={() => setViewModalOpen(false)} order={selectedOrder} />
             <CreateSalesOrderModal isOpen={isCreateModalOpen} onClose={() => setCreateModalOpen(false)} />
+            <ViewSalesOrderModal isOpen={isViewModalOpen} onClose={() => setViewModalOpen(false)} order={selectedOrder} />
         </div>
     );
 };

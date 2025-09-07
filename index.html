@@ -62,31 +62,6 @@
         box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2); /* Ring effect */
       }
       
-      .dark input[type="text"],
-      .dark input[type="email"],
-      .dark input[type="password"],
-      .dark input[type="number"],
-      .dark input[type="tel"],
-      .dark input[type="date"],
-      .dark select,
-      .dark textarea {
-          background-color: #374151; /* gray-700 */
-          border-color: #4b5563; /* gray-600 */
-          color: #f3f4f6; /* gray-100 */
-      }
-
-      .dark input[type="text"]:focus,
-      .dark input[type="email"]:focus,
-      .dark input[type="password"]:focus,
-      .dark input[type="number"]:focus,
-      .dark input[type="tel"]:focus,
-      .dark input[type="date"]:focus,
-      .dark select:focus,
-      .dark textarea:focus {
-          border-color: #6366f1; /* indigo-500 */
-          box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3); /* Ring effect */
-      }
-      
       /* Adjust select padding to account for arrow */
       select {
         padding-right: 2.5rem;
@@ -137,7 +112,7 @@
       }
     </style>
 </head>
-<body class="bg-gray-100 dark:bg-gray-900">
+<body class="bg-gray-100">
     <div id="root"></div>
     <script type="module" src="./index.tsx"></script>
     <script>
@@ -150,6 +125,5 @@
           });
         });
       }
-    </script>
-</body>
+    </script></body>
 </html>
