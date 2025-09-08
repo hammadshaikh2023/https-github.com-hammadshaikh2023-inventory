@@ -9,6 +9,9 @@ import { PlusIcon } from '../components/IconComponents';
 import ExportDropdown from '../components/ExportDropdown';
 import CurrencySelector from '../components/CurrencySelector';
 
+// Local type for UI state, extending the core OrderItem type for search functionality
+type SalesOrderItem = OrderItem & { productNameSearch?: string };
+
 export const CreateSalesOrderModal: React.FC<{
     isOpen: boolean;
     onClose: () => void;
@@ -19,8 +22,7 @@ export const CreateSalesOrderModal: React.FC<{
     const [customerName, setCustomerName] = useState('');
     const [orderDate, setOrderDate] = useState(new Date().toISOString().split('T')[0]);
     const [currency, setCurrency] = useState<Currency>(defaultCurrency);
-    // FIX: The state `items` should be an array of objects, not a single object.
-    const [items, setItems] = useState<Partial<OrderItem & { productNameSearch?: string }>[]>([{ productId: '', quantity: 1, price: 0 }]);
+    const [items, setItems] = useState<Partial<SalesOrderItem>[]>([{ productId: '', quantity: 1, price: 0 }]);
     const [itemErrors, setItemErrors] = useState<Record<number, string | null>>({});
 
     useEffect(() => {
@@ -34,9 +36,9 @@ export const CreateSalesOrderModal: React.FC<{
     }, [isOpen, defaultCurrency]);
 
 
-    const handleItemChange = (index: number, field: keyof OrderItem | 'productNameSearch', value: any) => {
+    const handleItemChange = (index: number, field: keyof SalesOrderItem, value: any) => {
         const newItems = [...items];
-        const currentItem = { ...newItems[index] };
+        const currentItem: Partial<SalesOrderItem> = { ...newItems[index] };
 
         if (field === 'productNameSearch') {
             currentItem.productNameSearch = value;

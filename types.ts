@@ -81,6 +81,7 @@ export interface User {
     roles: string[];
     designation: string;
     status: 'Active' | 'Blocked';
+    avatarUrl?: string;
 }
 
 export interface AuditLog {
