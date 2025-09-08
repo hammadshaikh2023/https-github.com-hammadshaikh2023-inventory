@@ -20,7 +20,8 @@ const CreatePurchaseOrderModal: React.FC<{
     const [vendorName, setVendorName] = useState('');
     const [orderDate, setOrderDate] = useState(new Date().toISOString().split('T')[0]);
     const [currency, setCurrency] = useState<Currency>(defaultCurrency);
-    const [items, setItems] = useState<Partial<OrderItem & { productNameSearch?: string }>>([{ productId: '', quantity: 1, price: 0 }]);
+    // FIX: The 'items' state was incorrectly typed as a single object instead of an array of objects.
+    const [items, setItems] = useState<Partial<OrderItem & { productNameSearch?: string }>[]>([{ productId: '', quantity: 1, price: 0 }]);
     const [itemErrors, setItemErrors] = useState<Record<number, string | null>>({});
 
     useEffect(() => {

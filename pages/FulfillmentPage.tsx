@@ -4,26 +4,8 @@ import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import { SalesOrder, GatePass } from '../types';
 import { useData } from '../context/DataContext';
+import { useDebounce } from '../hooks/useDebounce';
 import { PrinterIcon } from '../components/IconComponents';
-
-// Custom hook for debouncing a value.
-function useDebounce<T>(value: T, delay: number): T {
-    const [debouncedValue, setDebouncedValue] = useState<T>(value);
-
-    useEffect(() => {
-        // Set up a timer to update the debounced value after the specified delay.
-        const handler = setTimeout(() => {
-            setDebouncedValue(value);
-        }, delay);
-
-        // Clean up the timer if the value or delay changes before the timer fires.
-        return () => {
-            clearTimeout(handler);
-        };
-    }, [value, delay]); // Only re-call effect if value or delay changes
-
-    return debouncedValue;
-}
 
 const PackingSlipModal: React.FC<{
     isOpen: boolean;

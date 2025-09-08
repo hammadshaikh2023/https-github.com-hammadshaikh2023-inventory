@@ -18,6 +18,8 @@ interface DataContextType {
     addGatePass: (gatePass: Omit<GatePass, 'gatePassId' | 'issueDate'>) => void;
     updateSalesOrderStatus: (orderId: string, status: SalesOrder['status'], userName: string) => void;
     updatePurchaseOrderStatus: (orderId: string, status: PurchaseOrder['status'], userName: string) => void;
+    bulkUpdateProductStatus: (productIds: string[], status: Product['status']) => void;
+    bulkAdjustProductStock: (productIds: string[], adjustment: number) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -170,9 +172,36 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setGatePasses(prev => [newGatePass, ...prev]);
     };
 
+    const bulkUpdateProductStatus = (productIds: string[], newStatus: Product['status']) => {
+        setProducts(prevProducts =>
+            prevProducts.map(p => {
+                if (productIds.includes(p.id)) {
+                    // When manually setting status, it overrides the automatic stock check logic.
+                    // This is intentional for a direct status update.
+                    return { ...p, status: newStatus };
+                }
+                return p;
+            })
+        );
+    };
+
+    const bulkAdjustProductStock = (productIds: string[], adjustment: number) => {
+        setProducts(prevProducts =>
+            prevProducts.map(p => {
+                if (productIds.includes(p.id)) {
+                    const newStock = p.stock + adjustment;
+                    // Automatically update the status based on the new stock level.
+                    const newStatus = getProductStatus(newStock);
+                    return { ...p, stock: newStock < 0 ? 0 : newStock, status: newStatus };
+                }
+                return p;
+            })
+        );
+    };
+
 
     return (
-        <DataContext.Provider value={{ products, salesOrders, purchaseOrders, users, gatePasses, addProduct, updateProduct, addSalesOrder, addPurchaseOrder, addUser, updateUser, addGatePass, updateSalesOrderStatus, updatePurchaseOrderStatus }}>
+        <DataContext.Provider value={{ products, salesOrders, purchaseOrders, users, gatePasses, addProduct, updateProduct, addSalesOrder, addPurchaseOrder, addUser, updateUser, addGatePass, updateSalesOrderStatus, updatePurchaseOrderStatus, bulkUpdateProductStatus, bulkAdjustProductStock }}>
             {children}
         </DataContext.Provider>
     );
