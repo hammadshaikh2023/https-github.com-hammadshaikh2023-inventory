@@ -12,9 +12,12 @@ interface DataTableProps<T> {
     columns: Column<T>[];
     data: T[];
     renderActions?: (item: T) => React.ReactNode;
-    isBulkEditActive?: boolean;
-    selectedItems?: string[];
-    onSelectionChange?: (selectedIds: string[]) => void;
+    selection?: {
+        selectedIds: string[];
+        onToggleAll: () => void;
+        onToggleRow: (id: string) => void;
+        allSelected: boolean;
+    };
 }
 
 type SortConfig<T> = {
@@ -23,7 +26,7 @@ type SortConfig<T> = {
 } | null;
 
 const DataTable = <T extends { id: string },>(
-    { columns, data, renderActions, isBulkEditActive = false, selectedItems = [], onSelectionChange = () => {} }: DataTableProps<T>
+    { columns, data, renderActions, selection }: DataTableProps<T>
 ) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [sortConfig, setSortConfig] = useState<SortConfig<T>>(null);
@@ -53,27 +56,12 @@ const DataTable = <T extends { id: string },>(
         setSortConfig({ key, direction });
     };
 
-    const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.checked) {
-            onSelectionChange(sortedData.map(item => item.id));
-        } else {
-            onSelectionChange([]);
-        }
-    };
-
-    const handleSelectItem = (id: string) => {
-        const newSelection = selectedItems.includes(id)
-            ? selectedItems.filter(itemId => itemId !== id)
-            : [...selectedItems, id];
-        onSelectionChange(newSelection);
-    };
-
     const paginatedData = sortedData.slice(
         (currentPage - 1) * itemsPerPage,
         currentPage * itemsPerPage
     );
 
-    const totalPages = Math.ceil(sortedData.length / itemsPerPage);
+    const totalPages = Math.ceil(data.length / itemsPerPage);
 
     return (
         <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl overflow-hidden">
@@ -81,15 +69,14 @@ const DataTable = <T extends { id: string },>(
                 <table className="min-w-full text-sm divide-y divide-gray-200 dark:divide-gray-700">
                     <thead className="bg-gray-50 dark:bg-gray-700">
                         <tr>
-                            {isBulkEditActive && (
+                            {selection && (
                                 <th className="px-6 py-3">
                                     <input
                                         type="checkbox"
-                                        className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 dark:bg-gray-900 dark:ring-offset-gray-800"
-                                        checked={selectedItems.length > 0 && selectedItems.length === sortedData.length}
-                                        onChange={handleSelectAll}
-                                        // FIX: The ref callback function must return void or a cleanup function. The original implementation implicitly returned a boolean.
-                                        ref={el => { if (el) { el.indeterminate = selectedItems.length > 0 && selectedItems.length < sortedData.length; } }}
+                                        className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-900 text-indigo-600 focus:ring-indigo-500"
+                                        checked={selection.allSelected}
+                                        onChange={selection.onToggleAll}
+                                        aria-label="Select all items on this page"
                                     />
                                 </th>
                             )}
@@ -118,16 +105,17 @@ const DataTable = <T extends { id: string },>(
                             paginatedData.map((item, index) => (
                                 <tr 
                                     key={item.id} 
-                                    className={`transition-colors duration-150 animate-slideInUp ${isBulkEditActive && selectedItems.includes(item.id) ? 'bg-indigo-50 dark:bg-gray-700/60' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}
+                                    className={`transition-colors duration-150 animate-slideInUp ${selection?.selectedIds.includes(item.id) ? 'bg-indigo-50 dark:bg-gray-700' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}
                                     style={{ animationDelay: `${index * 30}ms`, animationFillMode: 'backwards' }}
                                 >
-                                    {isBulkEditActive && (
+                                    {selection && (
                                         <td className="px-6 py-4">
-                                             <input
+                                            <input
                                                 type="checkbox"
-                                                className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 dark:bg-gray-900 dark:ring-offset-gray-800"
-                                                checked={selectedItems.includes(item.id)}
-                                                onChange={() => handleSelectItem(item.id)}
+                                                className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-900 text-indigo-600 focus:ring-indigo-500"
+                                                checked={selection.selectedIds.includes(item.id)}
+                                                onChange={() => selection.onToggleRow(item.id)}
+                                                aria-label={`Select item ${item.id}`}
                                             />
                                         </td>
                                     )}
@@ -148,7 +136,7 @@ const DataTable = <T extends { id: string },>(
                         ) : (
                              <tr>
                                 <td 
-                                    colSpan={columns.length + (renderActions ? 1 : 0) + (isBulkEditActive ? 1 : 0)} 
+                                    colSpan={columns.length + (renderActions ? 1 : 0) + (selection ? 1 : 0)} 
                                     className="px-6 py-10 text-center text-gray-500 dark:text-gray-400"
                                 >
                                     No data available.

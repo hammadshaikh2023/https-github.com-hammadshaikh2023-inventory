@@ -183,7 +183,7 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen }) => {
                             )}
 
                             <div className="p-4 text-center hover:bg-gray-50 dark:hover:bg-gray-700 border-t dark:border-gray-700">
-                                <a href="#" className="text-sm text-indigo-600 dark:text-indigo-400 font-medium">View all notifications</a>
+                                <a href="/#/notifications" onClick={() => setNotificationsOpen(false)} className="text-sm text-indigo-600 dark:text-indigo-400 font-medium">View all notifications</a>
                             </div>
                         </div>
                     )}

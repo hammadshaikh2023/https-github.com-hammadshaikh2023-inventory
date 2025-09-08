@@ -12,9 +12,15 @@ const CustomTooltip = ({ active, payload, label }: any) => {
         <div className="p-4 bg-gray-900/80 text-white rounded-lg shadow-lg">
           <p className="label font-bold">{`${label}`}</p>
           {payload.map((p: any, index: number) => {
-            const style = { color: p.name === 'sales' ? '#d5cebb' : p.color };
+            const isProfitMargin = p.name === 'Avg. Profit Margin';
+            const value = isProfitMargin 
+                ? `${p.value.toLocaleString()}%` 
+                : p.value.toLocaleString();
+
             return (
-               <p key={index} style={style}>{`${p.name}: ${p.value.toLocaleString()}`}</p>
+               <p key={index} style={{ color: p.color || '#ffffff' }}>
+                   {`${p.name}: ${value}`}
+               </p>
             );
           })}
         </div>
@@ -42,8 +48,31 @@ const ReportsPage: React.FC = () => {
         stock: p.stock,
         sold: Math.floor(Math.random() * (p.stock + 50)) + 10 // Mock sold data
     }));
+    
+    // Profit Margin by Category Calculation
+    const marginByCategory = products.reduce((acc, product) => {
+        if (!acc[product.category]) {
+            acc[product.category] = { totalMargin: 0, count: 0 };
+        }
 
-    // Fix: Explicitly type the columns to ensure the 'accessor' property is a key of the data object, satisfying the ExportDropdown component's props type.
+        if (product.price > 0) {
+            const margin = ((product.price - product.unitCost) / product.price) * 100;
+            acc[product.category].totalMargin += margin;
+            acc[product.category].count += 1;
+        }
+        
+        return acc;
+    }, {} as Record<string, { totalMargin: number, count: number }>);
+
+    const profitMarginData = Object.keys(marginByCategory).map(category => ({
+        name: category,
+        'Avg. Profit Margin': marginByCategory[category].count > 0 
+            ? parseFloat((marginByCategory[category].totalMargin / marginByCategory[category].count).toFixed(1))
+            : 0,
+    }));
+
+
+    // FIX: Explicitly type the columns to ensure the 'accessor' property is a key of the data object, satisfying the ExportDropdown component's props type.
     const salesExportColumns: { header: string; accessor: keyof typeof mockSalesDataForChart[0] }[] = [
         { header: 'Month', accessor: 'name' },
         { header: 'Sales', accessor: 'sales' },
@@ -101,9 +130,30 @@ const ReportsPage: React.FC = () => {
                         </BarChart>
                     </ResponsiveContainer>
                 </div>
+                
+                 {/* Profit Margin by Category */}
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+                    <h3 className="font-semibold text-lg mb-4 text-gray-800 dark:text-white">Profit Margin by Category</h3>
+                    <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={profitMarginData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                            <defs>
+                                <linearGradient id="colorProfitMargin" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
+                                    <stop offset="95%" stopColor="#6ee7b7" stopOpacity={0.8}/>
+                                </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} vertical={false}/>
+                            <XAxis dataKey="name" tick={{ fill: '#6b7280' }} axisLine={false} tickLine={false} fontSize={12} />
+                            <YAxis tick={{ fill: '#6b7280' }} axisLine={false} tickLine={false} tickFormatter={(value) => `${value}%`} />
+                            <Tooltip content={<CustomTooltip />} cursor={{fill: 'rgba(16, 185, 129, 0.1)'}} />
+                            <Legend />
+                            <Bar dataKey="Avg. Profit Margin" fill="url(#colorProfitMargin)" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </div>
 
                 {/* Inventory by Category */}
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg col-span-1 lg:col-span-2">
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
                     <h3 className="font-semibold text-lg mb-4 text-gray-800 dark:text-white">Inventory by Category</h3>
                      <ResponsiveContainer width="100%" height={300}>
                         <PieChart>

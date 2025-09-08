@@ -8,6 +8,7 @@ export interface Product {
   stock: number;
   unitOfMeasure: 'Ton' | 'Cubic Meter' | 'Bag' | 'Drum';
   price: number;
+  unitCost: number;
   currency: Currency;
   status: 'In Stock' | 'Low Stock' | 'Out of Stock';
   warehouse: string;
@@ -15,6 +16,7 @@ export interface Product {
   supplier: string;
   batchNumber: string;
   qualityTestStatus: 'Pending' | 'Passed' | 'Failed';
+  profitMargin?: number;
 }
 
 export interface OrderItem {
@@ -57,6 +59,7 @@ export interface PurchaseOrder {
     status: 'Received' | 'Pending' | 'Cancelled';
     items: OrderItem[];
     history: HistoryEntry[];
+    trackingNumber?: string;
 }
 
 export interface Warehouse {
@@ -98,4 +101,24 @@ export interface GatePass {
     driverIdNumber: string;
     driverLicenseNumber: string;
     vehicleNumber: string;
+}
+
+export interface PackingSlip {
+    packingSlipId: string;
+    orderId: string;
+    issueDate: string;
+}
+
+export interface ShippingLabel {
+    shippingLabelId: string;
+    orderId: string;
+    issueDate: string;
+}
+
+export interface Reminder {
+    id: string;
+    orderId: string;
+    task: string;
+    reminderDateTime: string;
+    status: 'Pending' | 'Completed';
 }

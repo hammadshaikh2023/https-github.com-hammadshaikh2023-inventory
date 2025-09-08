@@ -17,6 +17,7 @@ import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
 import AuditPage from './pages/AuditPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import NotificationsPage from './pages/NotificationsPage';
 
 const App: React.FC = () => {
     return (
@@ -42,6 +43,7 @@ const App: React.FC = () => {
                                         </Route>
 
                                         <Route path="/settings" element={<SettingsPage />} />
+                                        <Route path="/notifications" element={<NotificationsPage />} />
                                     </Routes>
                                 </Layout>
                             </HashRouter>

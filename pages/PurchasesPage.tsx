@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import { useData } from '../context/DataContext';
@@ -10,7 +10,7 @@ import ExportDropdown from '../components/ExportDropdown';
 import CurrencySelector from '../components/CurrencySelector';
 
 
-const CreatePurchaseOrderModal: React.FC<{
+export const CreatePurchaseOrderModal: React.FC<{
     isOpen: boolean;
     onClose: () => void;
 }> = ({ isOpen, onClose }) => {
@@ -20,7 +20,7 @@ const CreatePurchaseOrderModal: React.FC<{
     const [vendorName, setVendorName] = useState('');
     const [orderDate, setOrderDate] = useState(new Date().toISOString().split('T')[0]);
     const [currency, setCurrency] = useState<Currency>(defaultCurrency);
-    // FIX: The 'items' state was incorrectly typed as a single object instead of an array of objects.
+    // FIX: The state `items` should be an array of objects, not a single object.
     const [items, setItems] = useState<Partial<OrderItem & { productNameSearch?: string }>[]>([{ productId: '', quantity: 1, price: 0 }]);
     const [itemErrors, setItemErrors] = useState<Record<number, string | null>>({});
 
@@ -210,8 +210,41 @@ const ViewPurchaseOrderModal: React.FC<{
     onClose: () => void;
     order: PurchaseOrder | null;
 }> = ({ isOpen, onClose, order }) => {
-    const { updatePurchaseOrderStatus } = useData();
+    const { updatePurchaseOrderStatus, updatePurchaseOrderTrackingNumber } = useData();
     const { currentUser } = useAuth();
+    const [trackingInput, setTrackingInput] = useState('');
+    const [historyDateFrom, setHistoryDateFrom] = useState('');
+    const [historyDateTo, setHistoryDateTo] = useState('');
+    const [historyUser, setHistoryUser] = useState('All');
+
+    useEffect(() => {
+        if(order) {
+            setTrackingInput(order.trackingNumber || '');
+        }
+        if (isOpen) {
+            setHistoryDateFrom('');
+            setHistoryDateTo('');
+            setHistoryUser('All');
+        }
+    }, [order, isOpen]);
+    
+    const historyUsers = useMemo(() => {
+        if (!order) return [];
+        return ['All', ...Array.from(new Set(order.history.map(h => h.user)))];
+    }, [order]);
+
+    const filteredHistory = useMemo(() => {
+        if (!order) return [];
+        return order.history.filter(entry => {
+            const entryDate = new Date(entry.timestamp.split(' ')[0]);
+            if (historyDateFrom && new Date(historyDateFrom) > entryDate) return false;
+            if (historyDateTo && new Date(historyDateTo) < entryDate) return false;
+            if (historyUser !== 'All' && entry.user !== historyUser) return false;
+            return true;
+        });
+    }, [order, historyDateFrom, historyDateTo, historyUser]);
+
+
     if (!order) return null;
 
     const handleStatusChange = (newStatus: PurchaseOrder['status']) => {
@@ -219,6 +252,12 @@ const ViewPurchaseOrderModal: React.FC<{
             updatePurchaseOrderStatus(order.id, newStatus, currentUser.name);
         }
         onClose();
+    };
+    
+    const handleTrackingUpdate = () => {
+        if (order && currentUser && trackingInput.trim() !== (order.trackingNumber || '')) {
+            updatePurchaseOrderTrackingNumber(order.id, trackingInput.trim(), currentUser.name);
+        }
     };
 
     return (
@@ -240,10 +279,53 @@ const ViewPurchaseOrderModal: React.FC<{
                         ))}
                     </ul>
                 </div>
+                <div className="border-t dark:border-gray-700 pt-4 mt-4">
+                    <h4 className="font-semibold text-gray-800 dark:text-white">Shipping Information</h4>
+                    <div className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                        {currentUser?.roles.includes('Admin') ? (
+                            <div className="flex items-center space-x-2">
+                                <label htmlFor="trackingNumber" className="font-medium">Tracking Number:</label>
+                                <input
+                                    id="trackingNumber"
+                                    type="text"
+                                    value={trackingInput}
+                                    onChange={(e) => setTrackingInput(e.target.value)}
+                                    placeholder="Enter tracking number"
+                                    className="flex-grow"
+                                />
+                                <button
+                                    onClick={handleTrackingUpdate}
+                                    className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                >
+                                    Save
+                                </button>
+                            </div>
+                        ) : (
+                            <p>
+                                <span className="font-medium">Tracking Number:</span> {order.trackingNumber || 'Not available'}
+                            </p>
+                        )}
+                    </div>
+                </div>
                 <div>
                     <h4 className="font-semibold text-gray-800 dark:text-white mt-4 pt-4 border-t dark:border-gray-700">Order History</h4>
+                     <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 items-center p-2 my-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-sm">
+                        <div className="sm:col-span-2 flex items-center gap-2">
+                            <input type="date" value={historyDateFrom} onChange={e => setHistoryDateFrom(e.target.value)} className="w-full text-xs p-1.5" />
+                            <span className="text-gray-500 dark:text-gray-400">-</span>
+                            <input type="date" value={historyDateTo} onChange={e => setHistoryDateTo(e.target.value)} className="w-full text-xs p-1.5" />
+                        </div>
+                        <div className="sm:col-span-1">
+                            <select value={historyUser} onChange={e => setHistoryUser(e.target.value)} className="w-full text-xs p-1.5">
+                                {historyUsers.map(user => <option key={user} value={user}>{user}</option>)}
+                            </select>
+                        </div>
+                        <div className="sm:col-span-1">
+                            <button onClick={() => { setHistoryDateFrom(''); setHistoryDateTo(''); setHistoryUser('All'); }} className="w-full text-xs p-2 bg-gray-200 dark:bg-gray-600 rounded hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">Reset</button>
+                        </div>
+                    </div>
                     <ul className="mt-2 space-y-2 max-h-40 overflow-y-auto">
-                        {order.history.map((entry, index) => (
+                        {filteredHistory.length > 0 ? filteredHistory.map((entry, index) => (
                             <li key={index} className="flex items-center text-sm">
                                 <div className="flex-shrink-0 w-32 text-gray-500 dark:text-gray-400 text-xs">
                                     {new Date(entry.timestamp).toLocaleString()}
@@ -253,7 +335,7 @@ const ViewPurchaseOrderModal: React.FC<{
                                     <p className="text-xs text-gray-500 dark:text-gray-400">by {entry.user}</p>
                                 </div>
                             </li>
-                        ))}
+                        )) : <p className="text-center text-sm text-gray-500 dark:text-gray-400 py-4">No history entries match the current filters.</p>}
                     </ul>
                 </div>
                 <div className="flex justify-between items-center pt-4 border-t dark:border-gray-700">
@@ -287,6 +369,7 @@ const PurchasesPage: React.FC = () => {
         { header: 'Order ID', accessor: 'id' as keyof PurchaseOrder, sortable: true },
         { header: 'Vendor', accessor: 'vendor' as keyof PurchaseOrder, sortable: true, render: (item: PurchaseOrder) => item.vendor.name },
         { header: 'Date', accessor: 'date' as keyof PurchaseOrder, sortable: true },
+        { header: 'Tracking #', accessor: 'trackingNumber' as keyof PurchaseOrder, sortable: true, render: (item: PurchaseOrder) => item.trackingNumber || 'N/A' },
         { header: 'Total', accessor: 'total' as keyof PurchaseOrder, sortable: true, render: (item: PurchaseOrder) => `${item.currency} ${item.total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}` },
         { header: 'Status', accessor: 'status' as keyof PurchaseOrder, sortable: true, render: (item: PurchaseOrder) => {
             const color = item.status === 'Received' ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' 

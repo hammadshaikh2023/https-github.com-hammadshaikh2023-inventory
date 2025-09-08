@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import { useData } from '../context/DataContext';
@@ -9,7 +9,7 @@ import { PlusIcon } from '../components/IconComponents';
 import ExportDropdown from '../components/ExportDropdown';
 import CurrencySelector from '../components/CurrencySelector';
 
-const CreateSalesOrderModal: React.FC<{
+export const CreateSalesOrderModal: React.FC<{
     isOpen: boolean;
     onClose: () => void;
 }> = ({ isOpen, onClose }) => {
@@ -19,7 +19,7 @@ const CreateSalesOrderModal: React.FC<{
     const [customerName, setCustomerName] = useState('');
     const [orderDate, setOrderDate] = useState(new Date().toISOString().split('T')[0]);
     const [currency, setCurrency] = useState<Currency>(defaultCurrency);
-    // FIX: The 'items' state was incorrectly typed as a single object instead of an array of objects.
+    // FIX: The state `items` should be an array of objects, not a single object.
     const [items, setItems] = useState<Partial<OrderItem & { productNameSearch?: string }>[]>([{ productId: '', quantity: 1, price: 0 }]);
     const [itemErrors, setItemErrors] = useState<Record<number, string | null>>({});
 
@@ -215,6 +215,33 @@ const ViewSalesOrderModal: React.FC<{
 }> = ({ isOpen, onClose, order }) => {
     const { updateSalesOrderStatus } = useData();
     const { currentUser } = useAuth();
+    const [historyDateFrom, setHistoryDateFrom] = useState('');
+    const [historyDateTo, setHistoryDateTo] = useState('');
+    const [historyUser, setHistoryUser] = useState('All');
+
+    useEffect(() => {
+        if (isOpen) {
+            setHistoryDateFrom('');
+            setHistoryDateTo('');
+            setHistoryUser('All');
+        }
+    }, [isOpen]);
+
+    const historyUsers = useMemo(() => {
+        if (!order) return [];
+        return ['All', ...Array.from(new Set(order.history.map(h => h.user)))];
+    }, [order]);
+
+    const filteredHistory = useMemo(() => {
+        if (!order) return [];
+        return order.history.filter(entry => {
+            const entryDate = new Date(entry.timestamp.split(' ')[0]);
+            if (historyDateFrom && new Date(historyDateFrom) > entryDate) return false;
+            if (historyDateTo && new Date(historyDateTo) < entryDate) return false;
+            if (historyUser !== 'All' && entry.user !== historyUser) return false;
+            return true;
+        });
+    }, [order, historyDateFrom, historyDateTo, historyUser]);
 
     if (!order) return null;
 
@@ -247,8 +274,23 @@ const ViewSalesOrderModal: React.FC<{
                 </div>
                  <div>
                     <h4 className="font-semibold text-gray-800 dark:text-white mt-4 pt-4 border-t dark:border-gray-700">Order History</h4>
+                     <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 items-center p-2 my-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-sm">
+                        <div className="sm:col-span-2 flex items-center gap-2">
+                            <input type="date" value={historyDateFrom} onChange={e => setHistoryDateFrom(e.target.value)} className="w-full text-xs p-1.5" />
+                            <span className="text-gray-500 dark:text-gray-400">-</span>
+                            <input type="date" value={historyDateTo} onChange={e => setHistoryDateTo(e.target.value)} className="w-full text-xs p-1.5" />
+                        </div>
+                        <div className="sm:col-span-1">
+                            <select value={historyUser} onChange={e => setHistoryUser(e.target.value)} className="w-full text-xs p-1.5">
+                                {historyUsers.map(user => <option key={user} value={user}>{user}</option>)}
+                            </select>
+                        </div>
+                        <div className="sm:col-span-1">
+                            <button onClick={() => { setHistoryDateFrom(''); setHistoryDateTo(''); setHistoryUser('All'); }} className="w-full text-xs p-2 bg-gray-200 dark:bg-gray-600 rounded hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">Reset</button>
+                        </div>
+                    </div>
                     <ul className="mt-2 space-y-2 max-h-40 overflow-y-auto">
-                        {order.history.map((entry, index) => (
+                        {filteredHistory.length > 0 ? filteredHistory.map((entry, index) => (
                             <li key={index} className="flex items-center text-sm">
                                 <div className="flex-shrink-0 w-32 text-gray-500 dark:text-gray-400 text-xs">
                                     {new Date(entry.timestamp).toLocaleString()}
@@ -258,7 +300,7 @@ const ViewSalesOrderModal: React.FC<{
                                     <p className="text-xs text-gray-500 dark:text-gray-400">by {entry.user}</p>
                                 </div>
                             </li>
-                        ))}
+                        )) : <p className="text-center text-sm text-gray-500 dark:text-gray-400 py-4">No history entries match the current filters.</p>}
                     </ul>
                 </div>
                 <div className="flex justify-between items-center pt-4 border-t dark:border-gray-700">

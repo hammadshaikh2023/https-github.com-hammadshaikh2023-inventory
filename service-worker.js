@@ -1,7 +1,11 @@
+
 // A more descriptive name for the static cache.
 const STATIC_CACHE_NAME = 'bws-static-cache-v5';
 // A more descriptive name for the data/dynamic content cache.
 const DATA_CACHE_NAME = 'bws-data-cache-v4';
+// Name for the IndexedDB database and object store
+const DB_NAME = 'bws-inventory-db';
+const SYNC_STORE_NAME = 'sync-queue';
 
 // List of files that make up the "app shell" and should be cached on install.
 // This ensures the app can load offline.
@@ -135,6 +139,75 @@ self.addEventListener('fetch', event => {
     })()
   );
 });
+
+// Background Sync event listener
+self.addEventListener('sync', event => {
+  if (event.tag === 'bws-sync') {
+    console.log('Service Worker: Background sync triggered!');
+    event.waitUntil(processSyncQueue());
+  }
+});
+
+// Helper functions for IndexedDB inside the Service Worker
+function openDb() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, 1);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+    // onupgradeneeded is handled by the main app thread
+  });
+}
+
+async function processSyncQueue() {
+  const db = await openDb();
+  const tx = db.transaction(SYNC_STORE_NAME, 'readonly');
+  const store = tx.objectStore(SYNC_STORE_NAME);
+  const queuedActions = await new Promise((resolve, reject) => {
+    const request = store.getAll();
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+
+  if (!queuedActions || queuedActions.length === 0) {
+    console.log('Service Worker: Sync queue is empty.');
+    return;
+  }
+
+  console.log('Service Worker: Processing sync queue:', queuedActions);
+
+  try {
+    // In a real application, you would loop through `queuedActions`
+    // and send them to your server API.
+    // For this demo, we'll just simulate a successful sync.
+    await Promise.all(queuedActions.map(action => {
+      // Example: fetch('/api/update', { method: 'POST', body: JSON.stringify(action) })
+      console.log(`Simulating API call for action: ${action.type}`, action.payload);
+      return Promise.resolve(); 
+    }));
+    
+    // If all API calls were successful, clear the queue.
+    const writeTx = db.transaction(SYNC_STORE_NAME, 'readwrite');
+    const writeStore = writeTx.objectStore(SYNC_STORE_NAME);
+    await new Promise((resolve, reject) => {
+        const request = writeStore.clear();
+        request.onsuccess = resolve;
+        request.onerror = reject;
+    });
+    
+    console.log('Service Worker: Sync queue processed and cleared successfully.');
+    
+    // Notify open clients that sync is complete
+    self.clients.matchAll().then(clients => {
+        clients.forEach(client => client.postMessage({ type: 'SYNC_COMPLETE' }));
+    });
+
+  } catch (error) {
+    console.error('Service Worker: Failed to process sync queue. Will retry later.', error);
+    // If any request fails, the sync event will be retried by the browser
+    // with an exponential backoff strategy, so we don't clear the queue.
+    throw error;
+  }
+}
 
 
 // Push event for notifications
