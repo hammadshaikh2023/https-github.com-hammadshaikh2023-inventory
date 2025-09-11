@@ -36,6 +36,7 @@ interface DataContextType {
     updateSalesOrderStatus: (orderId: string, status: SalesOrder['status'], userName: string) => void;
     updatePurchaseOrderStatus: (orderId: string, status: PurchaseOrder['status'], userName: string) => void;
     updatePurchaseOrderTrackingNumber: (orderId: string, trackingNumber: string, userName: string) => void;
+    updateProductStock: (productId: string, quantityChange: number, reason: string, userName: string) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -155,17 +156,26 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return 'In Stock';
     };
 
-    const updateProductStock = (productId: string, quantityChange: number) => {
+    const updateProductStock = (productId: string, quantityChange: number, reason: string, userName: string) => {
         setProducts(prevProducts =>
             prevProducts.map(p => {
                 if (p.id === productId) {
-                    const newStock = p.stock + quantityChange;
+                    const currentStock = Number(p.stock) || 0;
+                    const newStock = currentStock + quantityChange;
                     const newStatus = getProductStatus(newStock);
-                    return { ...p, stock: newStock < 0 ? 0 : newStock, status: newStatus };
+                    const newHistoryEntry: HistoryEntry = {
+                        timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+                        action: `${quantityChange > 0 ? '+' : ''}${quantityChange} units. Reason: ${reason}`,
+                        user: userName,
+                    };
+                    const newHistory = [newHistoryEntry, ...(p.history || [])];
+
+                    return { ...p, stock: newStock < 0 ? 0 : newStock, status: newStatus, history: newHistory };
                 }
                 return p;
             })
         );
+        performOrQueueUpdate({ type: 'UPDATE_PRODUCT_STOCK', payload: { productId, quantityChange, reason, userName } });
     };
 
     const addProduct = (product: Omit<Product, 'id'>) => {
@@ -173,6 +183,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             ...product,
             id: `P-${String(Date.now()).slice(-4)}`, // Use timestamp for more unique ID in demo
             status: getProductStatus(product.stock || 0),
+            history: [],
         };
         setProducts(prev => [newProduct, ...prev]);
         performOrQueueUpdate({ type: 'ADD_PRODUCT', payload: newProduct });
@@ -220,7 +231,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         order.items.forEach(item => {
             if(item.productId){
-                updateProductStock(item.productId, -item.quantity);
+                updateProductStock(item.productId, -item.quantity, `Created Sales Order ${newOrder.id}`, userName);
             }
         });
     };
@@ -275,7 +286,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 if (status === 'Received' && order.status !== 'Received') {
                     order.items.forEach(item => {
                         if(item.productId) {
-                            updateProductStock(item.productId, item.quantity);
+                            updateProductStock(item.productId, item.quantity, `Received Purchase Order ${order.id}`, userName);
                         }
                     });
                 }
@@ -310,9 +321,18 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
 
     const addUser = (user: Omit<User, 'id'>) => {
+        const dummyAvatars = [
+            './images/users/new1.png',
+            './images/users/new2.png',
+            './images/users/new3.png',
+            './images/users/new4.png'
+        ];
+        const randomAvatar = dummyAvatars[Math.floor(Math.random() * dummyAvatars.length)];
+
         const newUser: User = {
             ...user,
             id: `U-${String(Date.now()).slice(-4)}`,
+            avatarUrl: randomAvatar,
         };
         setUsers(prev => [newUser, ...prev]);
         performOrQueueUpdate({ type: 'ADD_USER', payload: newUser });
@@ -374,7 +394,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
 
     return (
-        <DataContext.Provider value={{ products, salesOrders, purchaseOrders, users, gatePasses, packingSlips, shippingLabels, reminders, addProduct, updateProduct, deleteProducts, updateProductStatus, addSalesOrder, addPurchaseOrder, addUser, updateUser, addGatePass, addPackingSlip, addShippingLabel, addReminder, updateReminderStatus, updateSalesOrderStatus, updatePurchaseOrderStatus, updatePurchaseOrderTrackingNumber }}>
+        <DataContext.Provider value={{ products, salesOrders, purchaseOrders, users, gatePasses, packingSlips, shippingLabels, reminders, addProduct, updateProduct, deleteProducts, updateProductStatus, addSalesOrder, addPurchaseOrder, addUser, updateUser, addGatePass, addPackingSlip, addShippingLabel, addReminder, updateReminderStatus, updateSalesOrderStatus, updatePurchaseOrderStatus, updatePurchaseOrderTrackingNumber, updateProductStock }}>
             {children}
         </DataContext.Provider>
     );

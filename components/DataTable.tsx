@@ -6,6 +6,7 @@ interface Column<T> {
     accessor: keyof T;
     render?: (item: T) => React.ReactNode;
     sortable?: boolean;
+    sortFn?: (a: T, b: T) => number;
 }
 
 interface DataTableProps<T> {
@@ -19,6 +20,7 @@ interface DataTableProps<T> {
         onToggleRow: (id: string) => void;
         allSelected: boolean;
     };
+    rowClassName?: (item: T) => string;
 }
 
 type SortConfig<T> = {
@@ -27,7 +29,7 @@ type SortConfig<T> = {
 } | null;
 
 const DataTable = <T extends { id: string },>(
-    { columns, data, renderActions, onViewDetails, selection }: DataTableProps<T>
+    { columns, data, renderActions, onViewDetails, selection, rowClassName }: DataTableProps<T>
 ) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [sortConfig, setSortConfig] = useState<SortConfig<T>>(null);
@@ -36,18 +38,38 @@ const DataTable = <T extends { id: string },>(
     const sortedData = useMemo(() => {
         let sortableItems = [...data];
         if (sortConfig !== null) {
+            const sortColumn = columns.find(c => c.accessor === sortConfig.key);
+
             sortableItems.sort((a, b) => {
-                if (a[sortConfig.key] < b[sortConfig.key]) {
-                    return sortConfig.direction === 'ascending' ? -1 : 1;
+                // Use custom sort function if provided
+                if (sortColumn?.sortFn) {
+                    const result = sortColumn.sortFn(a, b);
+                    return sortConfig.direction === 'ascending' ? result : -result;
                 }
-                if (a[sortConfig.key] > b[sortConfig.key]) {
-                    return sortConfig.direction === 'ascending' ? 1 : -1;
+                
+                // Default sorting logic
+                const valA = a[sortConfig.key];
+                const valB = b[sortConfig.key];
+
+                const isANull = valA === null || valA === undefined;
+                const isBNull = valB === null || valB === undefined;
+
+                if (isANull && isBNull) return 0;
+                if (isANull) return 1; // nulls/undefined go to the end
+                if (isBNull) return -1; // nulls/undefined go to the end
+                
+                let comparison = 0;
+                if (valA < valB) {
+                    comparison = -1;
+                } else if (valA > valB) {
+                    comparison = 1;
                 }
-                return 0;
+
+                return sortConfig.direction === 'ascending' ? comparison : -comparison;
             });
         }
         return sortableItems;
-    }, [data, sortConfig]);
+    }, [data, sortConfig, columns]);
     
     const requestSort = (key: keyof T) => {
         let direction: 'ascending' | 'descending' = 'ascending';
@@ -98,15 +120,23 @@ const DataTable = <T extends { id: string },>(
                                     )}
                                 </th>
                             ))}
-                            {(renderActions || onViewDetails) && <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>}
+                            {(renderActions || onViewDetails) && <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider no-print">Actions</th>}
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                         {paginatedData.length > 0 ? (
-                            paginatedData.map((item, index) => (
+                            paginatedData.map((item, index) => {
+                                const isSelected = selection?.selectedIds.includes(item.id);
+                                const customRowClass = rowClassName ? rowClassName(item) : '';
+                                
+                                return (
                                 <tr 
                                     key={item.id} 
-                                    className={`transition-colors duration-150 animate-slideInUp ${selection?.selectedIds.includes(item.id) ? 'bg-indigo-50 dark:bg-gray-700' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}
+                                    className={`transition-colors duration-150 animate-slideInUp ${
+                                        isSelected 
+                                            ? 'bg-indigo-50 dark:bg-gray-700' 
+                                            : customRowClass || 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                                    }`}
                                     style={{ animationDelay: `${index * 30}ms`, animationFillMode: 'backwards' }}
                                 >
                                     {selection && (
@@ -128,7 +158,7 @@ const DataTable = <T extends { id: string },>(
                                         </td>
                                     ))}
                                     {(renderActions || onViewDetails) && (
-                                        <td className="px-6 py-4 whitespace-nowrap text-right">
+                                        <td className="px-6 py-4 whitespace-nowrap text-right no-print">
                                             <div className="flex items-center justify-end space-x-4">
                                                 {onViewDetails && (
                                                     <button
@@ -145,7 +175,8 @@ const DataTable = <T extends { id: string },>(
                                         </td>
                                     )}
                                 </tr>
-                            ))
+                                );
+                            })
                         ) : (
                              <tr>
                                 <td 
@@ -161,7 +192,7 @@ const DataTable = <T extends { id: string },>(
             </div>
 
             {totalPages > 1 && (
-                 <div className="px-6 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700">
+                 <div className="px-6 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 no-print">
                     <span className="text-sm text-gray-600 dark:text-gray-400">
                         Page {currentPage} of {totalPages}
                     </span>

@@ -17,6 +17,9 @@ export interface Product {
   batchNumber: string;
   qualityTestStatus: 'Pending' | 'Passed' | 'Failed';
   profitMargin?: number;
+  history?: HistoryEntry[];
+  expires?: string;
+  imageUrl?: string;
 }
 
 export interface OrderItem {

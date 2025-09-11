@@ -192,7 +192,7 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen }) => {
 
                 <div className="relative">
                     <button onClick={() => setProfileOpen(prev => !prev)} className="flex items-center space-x-2">
-                        <img className="h-9 w-9 rounded-full object-cover" src={currentUser?.avatarUrl || `https://i.pravatar.cc/150?u=${currentUser?.id}`} alt="Your avatar" />
+                        <img className="h-9 w-9 rounded-full object-cover" src={currentUser?.avatarUrl || './images/users/default.png'} alt="Your avatar" />
                         <span className="hidden sm:inline font-medium text-gray-700 dark:text-gray-300">{currentUser?.name}</span>
                     </button>
                     {profileOpen && (
