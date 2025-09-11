@@ -31,6 +31,7 @@ export const AddEditProductModal: React.FC<{
                 qualityTestStatus: 'Pending',
                 status: 'In Stock',
                 currency: defaultCurrency,
+                batchNumber: '', // Start with empty batch number
             });
         }
         setShowHistory(false); // Reset history view on modal open/product change
@@ -83,6 +84,14 @@ export const AddEditProductModal: React.FC<{
             const newStock = Math.max(0, currentStock + delta); // Prevent negative stock
             return { ...prev, stock: newStock };
         });
+    };
+
+    const handleAutoGenerateBatchNumber = () => {
+        const today = new Date();
+        const yyyymmdd = today.toISOString().slice(0, 10).replace(/-/g, '');
+        const randomChars = Math.random().toString(36).substring(2, 6).toUpperCase();
+        const newBatchNumber = `BN-${yyyymmdd}-${randomChars}`;
+        setFormData(prev => ({ ...prev, batchNumber: newBatchNumber }));
     };
 
     return (
@@ -178,8 +187,24 @@ export const AddEditProductModal: React.FC<{
                         <input type="text" name="supplier" value={formData.supplier || ''} onChange={handleChange} className="mt-1 block w-full shadow-sm rounded-md" />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Batch Number</label>
-                        <input type="text" name="batchNumber" value={formData.batchNumber || ''} onChange={handleChange} className="mt-1 block w-full shadow-sm rounded-md" />
+                        <div className="flex justify-between items-center mb-1">
+                            <label htmlFor="batchNumber" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Batch Number</label>
+                            <button
+                                type="button"
+                                onClick={handleAutoGenerateBatchNumber}
+                                className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 rounded"
+                            >
+                                Auto Generate
+                            </button>
+                        </div>
+                        <input
+                            id="batchNumber"
+                            type="text"
+                            name="batchNumber"
+                            value={formData.batchNumber || ''}
+                            onChange={handleChange}
+                            className="block w-full shadow-sm rounded-md"
+                        />
                     </div>
                      <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Quality Test Status</label>
