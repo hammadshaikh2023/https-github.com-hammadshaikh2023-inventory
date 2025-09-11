@@ -1,5 +1,3 @@
-
-
 // IndexedDB utility functions
 
 const DB_NAME = 'bws-inventory-db';

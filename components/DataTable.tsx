@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ArrowUpIcon, ArrowDownIcon } from './IconComponents';
+import { ArrowUpIcon, ArrowDownIcon, EyeIcon } from './IconComponents';
 
 interface Column<T> {
     header: string;
@@ -12,6 +12,7 @@ interface DataTableProps<T> {
     columns: Column<T>[];
     data: T[];
     renderActions?: (item: T) => React.ReactNode;
+    onViewDetails?: (item: T) => void;
     selection?: {
         selectedIds: string[];
         onToggleAll: () => void;
@@ -26,7 +27,7 @@ type SortConfig<T> = {
 } | null;
 
 const DataTable = <T extends { id: string },>(
-    { columns, data, renderActions, selection }: DataTableProps<T>
+    { columns, data, renderActions, onViewDetails, selection }: DataTableProps<T>
 ) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [sortConfig, setSortConfig] = useState<SortConfig<T>>(null);
@@ -97,7 +98,7 @@ const DataTable = <T extends { id: string },>(
                                     )}
                                 </th>
                             ))}
-                            {renderActions && <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>}
+                            {(renderActions || onViewDetails) && <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>}
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -126,9 +127,21 @@ const DataTable = <T extends { id: string },>(
                                             </span>
                                         </td>
                                     ))}
-                                    {renderActions && (
+                                    {(renderActions || onViewDetails) && (
                                         <td className="px-6 py-4 whitespace-nowrap text-right">
-                                            {renderActions(item)}
+                                            <div className="flex items-center justify-end space-x-4">
+                                                {onViewDetails && (
+                                                    <button
+                                                        onClick={() => onViewDetails(item)}
+                                                        className="text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                                        title="View Details"
+                                                        aria-label={`View details for item ${item.id}`}
+                                                    >
+                                                        <EyeIcon className="w-5 h-5" />
+                                                    </button>
+                                                )}
+                                                {renderActions && renderActions(item)}
+                                            </div>
                                         </td>
                                     )}
                                 </tr>
@@ -136,7 +149,7 @@ const DataTable = <T extends { id: string },>(
                         ) : (
                              <tr>
                                 <td 
-                                    colSpan={columns.length + (renderActions ? 1 : 0) + (selection ? 1 : 0)} 
+                                    colSpan={columns.length + ((renderActions || onViewDetails) ? 1 : 0) + (selection ? 1 : 0)} 
                                     className="px-6 py-10 text-center text-gray-500 dark:text-gray-400"
                                 >
                                     No data available.

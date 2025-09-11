@@ -379,11 +379,7 @@ const InventoryPage: React.FC = () => {
                     onToggleRow: handleToggleRow,
                     allSelected: selectedProductIds.length === filteredProducts.length && filteredProducts.length > 0,
                 } : undefined}
-                renderActions={currentUser?.roles.includes('Admin') ? (product) => (
-                 <div className="space-x-2 no-print">
-                    <button onClick={() => handleEditProduct(product)} className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium">Edit</button>
-                 </div>
-                ) : undefined} 
+                onViewDetails={currentUser?.roles.includes('Admin') ? handleEditProduct : undefined}
             />
 
             <Modal isOpen={isScannerOpen} onClose={() => setScannerOpen(false)} title="Scan Barcode">

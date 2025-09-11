@@ -1,5 +1,3 @@
-
-
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { Product, SalesOrder, PurchaseOrder, OrderItem, User, Currency, GatePass, HistoryEntry, PackingSlip, ShippingLabel, Reminder } from '../types';
 import { mockProducts, mockSalesOrders, mockPurchaseOrders, mockUsers } from '../data/mockData';

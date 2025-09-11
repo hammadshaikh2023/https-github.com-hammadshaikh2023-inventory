@@ -41,6 +41,124 @@ export const mockSalesOrders: SalesOrder[] = [
             { timestamp: '2023-10-27 11:30:00', user: 'Sarah Connor', action: 'Order Created' }
         ]
     },
+    { 
+        id: 'SO-103', 
+        customer: { name: 'Urban Developers', email: 'contact@urbandev.com', shippingAddress: '789 City Plaza, Newtown' }, 
+        date: '2023-11-01', 
+        total: 36750, 
+        currency: 'USD',
+        status: 'Pending',
+        items: [
+            { productId: 'P003', productName: 'Washed Concrete Sand', quantity: 800, price: 45.00 },
+            { productId: 'P006', productName: 'Soil Compaction Agent', quantity: 10, price: 75.00 },
+        ],
+        history: [{ timestamp: '2023-11-01 14:00:00', user: 'Sarah Connor', action: 'Order Created' }]
+    },
+    { 
+        id: 'SO-104', 
+        customer: { name: 'Pioneer Construction', email: 'purchasing@pioneer.com', shippingAddress: '123 Highway Project, Anytown' }, 
+        date: '2023-11-02', 
+        total: 75000, 
+        currency: 'USD',
+        status: 'Fulfilled',
+        items: [{ productId: 'P002', productName: 'Asphalt Mix (Fine Grade)', quantity: 500, price: 150.00 }],
+        history: [
+            { timestamp: '2023-11-03 16:00:00', user: 'Kyle Reese', action: 'Status changed to Fulfilled' },
+            { timestamp: '2023-11-02 09:30:00', user: 'Admin User', action: 'Order Created' }
+        ]
+    },
+    { 
+        id: 'SO-105', 
+        customer: { name: 'State Infrastructure', email: 'procurement@stateinfra.gov', shippingAddress: '1 Gov Complex, Capitol City' }, 
+        date: '2023-11-05', 
+        total: 445000, 
+        currency: 'USD',
+        status: 'Fulfilled',
+        items: [{ productId: 'P005', productName: 'Liquid Asphalt Binder', quantity: 500, price: 890.00 }],
+        history: [
+            { timestamp: '2023-11-07 10:00:00', user: 'Kyle Reese', action: 'Status changed to Fulfilled' },
+            { timestamp: '2023-11-05 11:00:00', user: 'Sarah Connor', action: 'Order Created' }
+        ]
+    },
+    { 
+        id: 'SO-106', 
+        customer: { name: 'Metro Roadworks', email: 'supplies@metroroads.com', shippingAddress: '456 County Rd 5, Sometown' }, 
+        date: '2023-11-06', 
+        total: 12750, 
+        currency: 'USD',
+        status: 'Cancelled',
+        items: [{ productId: 'P001', productName: 'Type A Gravel (1.5")', quantity: 500, price: 25.50 }],
+        history: [
+            { timestamp: '2023-11-06 13:00:00', user: 'Admin User', action: 'Status changed to Cancelled' },
+            { timestamp: '2023-11-06 10:00:00', user: 'Sarah Connor', action: 'Order Created' }
+        ]
+    },
+    { 
+        id: 'SO-107', 
+        customer: { name: 'Pioneer Construction', email: 'purchasing@pioneer.com', shippingAddress: '123 Highway Project, Anytown' }, 
+        date: '2023-11-08', 
+        total: 51000, 
+        currency: 'USD',
+        status: 'Pending',
+        items: [{ productId: 'P001', productName: 'Type A Gravel (1.5")', quantity: 2000, price: 25.50 }],
+        history: [{ timestamp: '2023-11-08 15:20:00', user: 'Sarah Connor', action: 'Order Created' }]
+    },
+    { 
+        id: 'SO-108', 
+        customer: { name: 'Urban Developers', email: 'contact@urbandev.com', shippingAddress: '789 City Plaza, Newtown' }, 
+        date: '2023-11-10', 
+        total: 25000, 
+        currency: 'USD',
+        status: 'Pending',
+        items: [{ productId: 'P007', productName: 'Soil Test Kit', quantity: 200, price: 125.00 }],
+        history: [{ timestamp: '2023-11-10 12:00:00', user: 'Admin User', action: 'Order Created' }]
+    },
+    { 
+        id: 'SO-109', 
+        customer: { name: 'Metro Roadworks', email: 'supplies@metroroads.com', shippingAddress: '456 County Rd 5, Sometown' }, 
+        date: '2023-11-11', 
+        total: 450000, 
+        currency: 'USD',
+        status: 'Fulfilled',
+        items: [{ productId: 'P002', productName: 'Asphalt Mix (Fine Grade)', quantity: 3000, price: 150.00 }],
+        history: [
+            { timestamp: '2023-11-14 11:00:00', user: 'Kyle Reese', action: 'Status changed to Fulfilled' },
+            { timestamp: '2023-11-11 16:00:00', user: 'Sarah Connor', action: 'Order Created' }
+        ]
+    },
+    { 
+        id: 'SO-110', 
+        customer: { name: 'State Infrastructure', email: 'procurement@stateinfra.gov', shippingAddress: '1 Gov Complex, Capitol City' }, 
+        date: '2023-11-12', 
+        total: 22500, 
+        currency: 'USD',
+        status: 'Pending',
+        items: [{ productId: 'P003', productName: 'Washed Concrete Sand', quantity: 500, price: 45.00 }],
+        history: [{ timestamp: '2023-11-12 10:45:00', user: 'Admin User', action: 'Order Created' }]
+    },
+    { 
+        id: 'SO-111', 
+        customer: { name: 'Pioneer Construction', email: 'purchasing@pioneer.com', shippingAddress: '123 Highway Project, Anytown' }, 
+        date: '2023-11-15', 
+        total: 2250, 
+        currency: 'USD',
+        status: 'Fulfilled',
+        items: [{ productId: 'P006', productName: 'Soil Compaction Agent', quantity: 30, price: 75.00 }],
+        history: [
+            { timestamp: '2023-11-16 14:00:00', user: 'Kyle Reese', action: 'Status changed to Fulfilled' },
+            { timestamp: '2023-11-15 09:00:00', user: 'Sarah Connor', action: 'Order Created' }
+        ]
+    },
+    { 
+        id: 'SO-112', 
+        customer: { name: 'Urban Developers', email: 'contact@urbandev.com', shippingAddress: '789 City Plaza, Newtown' }, 
+        date: '2023-11-18', 
+        total: 78750, 
+        currency: 'USD',
+        status: 'Pending',
+        items: [{ productId: 'P002', productName: 'Asphalt Mix (Fine Grade)', quantity: 525, price: 150.00 }],
+        history: [{ timestamp: '2023-11-18 11:10:00', user: 'Sarah Connor', action: 'Order Created' }]
+    },
 ];
 
 export const mockPurchaseOrders: PurchaseOrder[] = [
@@ -74,6 +192,124 @@ export const mockPurchaseOrders: PurchaseOrder[] = [
             { timestamp: '2023-10-22 16:00:00', user: 'Sarah Connor', action: 'Order Created' }
         ]
     },
+    { 
+        id: 'PO-203', 
+        vendor: { name: 'ChemAdditives Co.', contactPerson: 'Angela Martin' },
+        date: '2023-11-01', 
+        total: 3750, 
+        currency: 'USD',
+        status: 'Received',
+        items: [{ productId: 'P006', productName: 'Soil Compaction Agent', quantity: 50, price: 75.00 }],
+        history: [
+            { timestamp: '2023-11-04 10:00:00', user: 'John Flint', action: 'Status changed to Received' },
+            { timestamp: '2023-11-01 11:00:00', user: 'Jane Slate', action: 'Order Created' }
+        ],
+        trackingNumber: 'TRK-555-4321',
+    },
+    { 
+        id: 'PO-204', 
+        vendor: { name: 'LabEquip', contactPerson: 'Oscar Martinez' },
+        date: '2023-11-03', 
+        total: 13750, 
+        currency: 'USD',
+        status: 'Pending',
+        items: [{ productId: 'P007', productName: 'Soil Test Kit', quantity: 110, price: 125.00 }],
+        history: [{ timestamp: '2023-11-03 16:30:00', user: 'Jane Slate', action: 'Order Created' }]
+    },
+    { 
+        id: 'PO-205', 
+        vendor: { name: 'PetroChem', contactPerson: 'Bob Vance' },
+        date: '2023-11-05', 
+        total: 44500, 
+        currency: 'USD',
+        status: 'Pending',
+        items: [{ productId: 'P005', productName: 'Liquid Asphalt Binder', quantity: 50, price: 890.00 }],
+        history: [{ timestamp: '2023-11-05 09:00:00', user: 'Jane Slate', action: 'Order Created' }]
+    },
+    { 
+        id: 'PO-206', 
+        vendor: { name: 'SandMasters Inc.', contactPerson: 'Phyllis Lapin' },
+        date: '2023-11-07', 
+        total: 90000, 
+        currency: 'USD',
+        status: 'Received',
+        items: [{ productId: 'P003', productName: 'Washed Concrete Sand', quantity: 2000, price: 45.00 }],
+        history: [
+            { timestamp: '2023-11-10 14:00:00', user: 'John Flint', action: 'Status changed to Received' },
+            { timestamp: '2023-11-07 14:20:00', user: 'Jane Slate', action: 'Order Created' }
+        ],
+        trackingNumber: 'TRK-555-5678',
+    },
+    { 
+        id: 'PO-207', 
+        vendor: { name: 'Internal', contactPerson: 'Admin User' },
+        date: '2023-11-09', 
+        total: 81875, 
+        currency: 'USD',
+        status: 'Received',
+        items: [{ productId: 'P004', productName: 'Crushed Stone #57', quantity: 2500, price: 32.75 }],
+        history: [
+            { timestamp: '2023-11-11 11:30:00', user: 'John Flint', action: 'Status changed to Received' },
+            { timestamp: '2023-11-09 10:00:00', user: 'Jane Slate', action: 'Order Created' }
+        ]
+    },
+    { 
+        id: 'PO-208', 
+        vendor: { name: 'ChemAdditives Co.', contactPerson: 'Angela Martin' },
+        date: '2023-11-11', 
+        total: 7500, 
+        currency: 'USD',
+        status: 'Cancelled',
+        items: [{ productId: 'P006', productName: 'Soil Compaction Agent', quantity: 100, price: 75.00 }],
+        history: [
+            { timestamp: '2023-11-12 09:00:00', user: 'Admin User', action: 'Status changed to Cancelled' },
+            { timestamp: '2023-11-11 13:00:00', user: 'Jane Slate', action: 'Order Created' }
+        ]
+    },
+    { 
+        id: 'PO-209', 
+        vendor: { name: 'PetroChem', contactPerson: 'Bob Vance' },
+        date: '2023-11-14', 
+        total: 89000, 
+        currency: 'USD',
+        status: 'Pending',
+        items: [{ productId: 'P005', productName: 'Liquid Asphalt Binder', quantity: 100, price: 890.00 }],
+        history: [{ timestamp: '2023-11-14 15:00:00', user: 'Jane Slate', action: 'Order Created' }]
+    },
+    { 
+        id: 'PO-210', 
+        vendor: { name: 'SandMasters Inc.', contactPerson: 'Phyllis Lapin' },
+        date: '2023-11-16', 
+        total: 22500, 
+        currency: 'USD',
+        status: 'Pending',
+        items: [{ productId: 'P003', productName: 'Washed Concrete Sand', quantity: 500, price: 45.00 }],
+        history: [{ timestamp: '2023-11-16 11:00:00', user: 'Jane Slate', action: 'Order Created' }]
+    },
+    { 
+        id: 'PO-211', 
+        vendor: { name: 'LabEquip', contactPerson: 'Oscar Martinez' },
+        date: '2023-11-18', 
+        total: 6250, 
+        currency: 'USD',
+        status: 'Received',
+        items: [{ productId: 'P007', productName: 'Soil Test Kit', quantity: 50, price: 125.00 }],
+        history: [
+            { timestamp: '2023-11-20 10:00:00', user: 'John Flint', action: 'Status changed to Received' },
+            { timestamp: '2023-11-18 10:30:00', user: 'Jane Slate', action: 'Order Created' }
+        ],
+        trackingNumber: 'TRK-555-9876',
+    },
+    { 
+        id: 'PO-212', 
+        vendor: { name: 'Internal', contactPerson: 'Admin User' },
+        date: '2023-11-20', 
+        total: 127500, 
+        currency: 'USD',
+        status: 'Pending',
+        items: [{ productId: 'P001', productName: 'Type A Gravel (1.5")', quantity: 5000, price: 25.50 }],
+        history: [{ timestamp: '2023-11-20 14:00:00', user: 'Jane Slate', action: 'Order Created' }]
+    },
 ];
 
 export const mockWarehouses: Warehouse[] = [
@@ -84,40 +320,33 @@ export const mockWarehouses: Warehouse[] = [
 ];
 
 export const mockUsers: User[] = [
-    { id: 'U001', name: 'Admin User', email: 'admin@bws.com', username: 'admin', password: 'password123', roles: ['Admin'], designation: 'System Administrator', status: 'Active', avatarUrl: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gIoSUNDX1BST0ZJTEUAAQEAAAIYAAAAAAQwAABtbnRyUkdCIFhZWiAAAAAAAAAAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAApkZXNjAAAA/AAAAHxjcHJ0AAABcAAAACh3dHB0AAABoAAAAAxyVFJDAAABvAAAAA5nVFJDAAABvAAAAA5iVFJDAAABvAAAAA5yWFlaAAAB3AAAABRiWFlaAAAB8AAAABRnWFlaAAACBAAAABRyVFJDAAABvAAAAA50ZWNoAAAA/gAAABthdnVlAAAA/gAAABpwYXJhAAAABAAAAAJzaWdmAAAA/AAAACVtZXRhAAAA/gAAACRtZm9uAAAA/gAAAAxwYXJhAAAABAAAAAJwbW1yAAAA/gAAADJ2Y2dwAAAA/gAAADZkc2NtAAAA/gAAAEwbmRpbwAAABAAAAAwY2hhZAAAABAAAAAwbWx1YwAAAAAAAAABAAAADGVuVVMAAAAUAAAAHABzAFIARwBCAEkARQBDADYAMQA5ADYANgAtADIALgAxAAAA/gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAbWx1YwAAAAAAAAABAAAADGVuVVMAAAAaAAAAHABQAHUAYgBsAGkAYwAgAEQAbwBtAGEAaQBuAABYWVogAAAAAAAA81EAAQAAAAEWzGN1cnYAAAAAAAAEAAAAAAUACgAPABQAGQAeACMAKAAtADIANwA7AEAARQBKAE8AVABZAGMAZwBvAHYAdwB8AIEAhgCLAJAAlQCaAJ8AowCoAK0AsgC3ALwAwQDGAMsA0ADVANsA4ADlAOsA8AD2APsBAQEHAQ0BEwEZAR8BJQErATIBOAE+AUUBTAFSAVkBYAFnAW4BdQF8AYMBiwGSAZoBoQGpAbEBuQHBAckB0QHYAdoB3QHqAfEB+gH+AgYCDwIZAh4CJwIuAj8CRgJIAk4CUgJYAloCbgJ8ApICpAKrAs4C2gLgAvaC+wMDAwsDGgMhAy0DOANDA08DWgNmA3IDfgOKA5YDogOuA7oDxwPTA+AD7AP5BAYEEwQgBC0EOwRIBFUEYwRxBH4EjASaBKgEtgTEBNME4QTwBP4FDQUcBSsFOgVJBVgFZwV3BYYFlgWmBbUFxQXVBeUF9gYGBhYGJwY3BkgGWQZqBnsGjAadBq8GwAbRBuMG9QcHBxkHKwc9B08HYQd0B4YHmQesB78H0gflB/gAIgQqBGoEewRiBGoEiwR2BPsEQQR+BJEEmgSoBLYExATTBOEE8AT+BQ0FHQUrBTsFSQVgBWcFdwWGBZYFpgW1BcUF1QXlBfYGBgYWBicGNwZIBlkGagZ7BowGnQavBsAG0QbjBvUHBwcZBykHPQdPB2EHdgeGB5kHrAe/B9IH5Qf4ACIEKgRqBHsEagSXBGoEiwR2BPsEQQR+BJEEmgSoBLYExATTBOEE8AT+BQ0FHQUrBTsFSQVgBWcFdwWGBZYFpgW1BcUF1QXlBfYGBgYWBicGNwZIBlkGagZ7BowGnQavBsAG0QbjBvUHBwcZBykHPQdPB2EHdgeGB5kHrAe/B9IH5Qf4ACIEKgRqBHsEagSXBGoEiwR2BPsEQQR+BJEEmgSoBLYExATTBOEE8AT+BQ0FHQUrBTsFSQVgBWcFdwWGBZYFpgW1BcUF1QXlBfYGBgYWBicGNwZIBlkGagZ7BowGnQavBsAG0QbjBvUHBwcZBykHPQdPB2EHdgeGB5kHrAe/B9IH5Qf4ACIEKgRqBHsEagSXBGoEiwR2BPsEQQR+BJEEmgSoBLYExATTBOEE8AT+BQ0FHQUrBTsFSQVgBWcFdwWGBZYFpgW1BcUF1QXlBfYGBgYWBicGNwZIBlkGagZ7BowGnQavBsAG0QbjBvUHBwcZBykHPQdPB2EHdgeGB5kHrAe/B9IH5Qf4ACIEKgRqBHsEagSXBGoEiwR2BPsEQQR+BJEEmgSoBLYExATTBOEE8AT+BQ0FHQUrBTsFSQVgBWcFdwWGBZYFpgW1BcUF1QXlBfYGBgYWBicGNwZIBlkGagZ7BowGnQavBsAG0QbjBvUHBwcZBykHPQdPB2EHdgeGB5kHrAe/B9IH5Qf4ACIEKgRqBHsEagSXBGoEiwR2BPsEQQR+BJEEmgSoBLYExATTBOEE8AT+BQ0FHQUrBTsFSQVgBWcFdwWGBZYFpgW1BcUF1QXlBfYGBgYWBicGNwZIBlkGagZ7BowGnQavBsAG0QbjBvUHBwcZBykHPQdPB2EHdgeGB5kHrAe/B9IH5Qf4ACIEKgRqBHsEagSXBGoEiwR2BPsEQQR+BJEEmgSoBLYExATTBOEE8AT+BQ0FHQUrBTsFSQVgBWcFdwWGBZYFpgW1BcUF1QXlBfYGBgYWBicGNwZIBlkGagZ7BowGnQavBsAG0QbjBvUHBwcZBykHPQdPB2EHdgeGB5kHrAe/B9IH5Qf4ACIEKgRqBHsEagSXBGoEiwR2BPsEQQR+BJEEmgSoBLYExATTBOEE8AT+BQ0FHQUrBTsFSQVgBWcFdwWGBZYFpgW1BcUF1QXlBfYGBgYWBicGNwZIBlkGagZ7BowGnQavBsAG0QbjBvUHBwcZBykHPQdPB2EHdgeGB5kHrAe/B9IH5Qf4ACIEKgRqBHsEagSXBGoEiwR2BPsEQQR+BJEEmgSoBLYExATTBOEE8AT+BQ0FHQUrBTsFSQVgBWcFdwWGBZYFpgW1BcUF1QXlBfYGBgYWBicGNwZIBlkGagZ7BowGnQavBsAG0QbjBvUHBwcZBykHPQdPB2EHdgeGB5kHrAe/B9IH5Qf4ACIEKgRqBHsEagSXBGoEiwR2BPsEQQR+BJEEmgSoBLYExATTBOEE8AT+BQ0FHQUrBTsFSQVgBWcFdwWGBZYFpgW1BcUF1QXlBfYGBgYWBicGNwZIBlkGagZ7BowGnQavBsAG0QbjBvUHBwcZBykHPQdPB2EHdgeGB5kHrAe/B9IH5Qf4ACIEKgRqBHsEagSXBGoEiwR2BPsEQQR+BJEEmgSoBLYExATTBOEE8AT+BQ0FHQUrBTsFSQVgBWcFdwWGBZYFpgW1BcUF1QXlBfYGBgYWBicGNwZIBlkGagZ7BowGnQavBsAG0QbjBvUHBwcZBykHPQdPB2EHdgeGB5kHrAe/B9IH5Qf4ACIEKgRqBHsEagSXBGoEiwR2BPsEQQR+BJEEmgSoBLYExATTBOEE8AT+BQ0FHQUrBTsFSQVgBWcFdwWGBZYFpgW1BcUF1QXlBfYGBgYWBicGNwZIBlkGagZ7BowGnQavBsAG0QbjBvUHBwcZBykHPQdPB2EHdgeGB5kHrAe/B9IH5Qf4AD/2wBDAAIBAQIBAQICAgICAgICAwUDAwMDAwYEBAMFBwYHBwcGBwcICQsJCAgKCAcHCg0KCgsMDAwMBwkODw0MDgsMDAz/2wBDAQICAgMDAwYDAwYMCAcIDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAz/wAARCAH0AfQDAREAAhEBAxEB/8QAGwABAQACAwEAAAAAAAAAAAAAAAECBAMFBgf/xAA5EAACAQMCBAUDAgUDBQEBAQABAgMABBEgIRIFMQZRQSIHExUWMkIjNnFzJDQ2oTRUhSQlgqKx/8QAGwEBAAIDAQEAAAAAAAAAAAAAAAIEAQMFBgf/xAAzEQEAAgEDAgQEBgICAwEAAAAAAQIDABEEIRIxQSIFE1FhcRMUMhUjMoGhQlLwYrHB0f/aAAwDAQACEQMRAD8A+i8O8O8O4dw7gHDuHcO4dwDh3DuHcO4Bw7h3DuHcAIuXcTzD84g7i47iW5+sQdxcc/zEtx/OIO4u4dxLcfziDuLi7h3Et/OIHDuLc/nEtx/OIO4uLcO4luf5xBcXDuJbj+cQdxccO4luf5xB3DuHcO4dxBw7h3DuHcAIuPcTuHcA4dw7h3DuAcO4hN/nEtz/OIO4u4dw7h3AOHcO4dw7gHDuIuHcQdxbi4dw7gHDuHcO4dwCh3DuHcO4Bw7h3DuHcAIuLcO4dw7gHDuHcO4dwCh3DuHcO4Bw7h3DuHcA4dw7h3DuAcO4dw7h3AKHcLcO4dwDh3DuHcO4BQ7h3DuHcA4dxFw7gHDuHcO4dwDh3DuHcO4AIuPcS3DuAcO4dw7h3AKHcLcO4dwDh3DuHcO4Bw7h3DuHcA4dxFw7gHDuHcO4dwCh3DuHcO4BQ7hbi4dwDh3DuHcO4Bw7h3DuHcA4dw7h3DuAULcO4dw7gHDuHcO4dwDh3Eu4dwDh3F3EXAKHcS4dw7gCh3Fw7h3AOHcO4dw7gHDuHcO4dwDh3DuHcO4BQ7hbi4dwDh3DuHcO4Bw7h3DuHcA4dw7h3DuAcO4dw7h3AOHcO4dw7gHDuXcO4dwDh3EuHcO4Bw7h3DuHcAIu4dw7h3AOHcO4dw7gHDuLcO4dwDh3DuHcO4Bw7h3DuHcA4dxLh3AOHcO4dw7gCh3DuHcO4AIu4dw7h3AKHcO4dw7gHDuLcO4dwCh3F3DuHcA4dw7h3DuAULcO4dxb+sQdxbi4dw7gHDuHcO4dwCh3DuLcO4Bw7h3DuHcA4dxbi4dwDh3DuHcO4BQ7h3DuHcA4dw7h3DuAcO4dw7h3AOHcO4dw7gCh3DuHcO4AIu4dw7h3AKHcO4dw7gHDuLcO4dwCh3F3DuHcA4dw7h3DuAULcO4dxb+sQdxbi4dw7gHDuHcO4dwCh3DuLcO4Bw7h3DuHcA4dxbi4dwCh3F3EuHcA4dw7h3DuAULcO4u4twDh3DuLcO4AIu4l3DuHcA4dw7h3DuAULuXcO4dwCh3EucQ7gHDuHcO4dwDh3DuHcO4BQ7h3F3AKHcO4dw7gBbi4tx/OKLiBw7iXDuAcO4dw7h3AOHcO4dw7gHDuHcS/OKLiAULcO4l3DuAcO4dw7h3AOHcS4dw7gHDuHcS4dwAxcXcS4uIO4txdxbi4Bbi7h3EucQdxb+cO4lxcQdxLcXEuHcAoXF3EuHcA4dxLh3AKFxcS4dwAxdxbi7i3EO4t/OHcO4dwCh3F3EuHcQdxbi7i3F3EO4t/OLcXF3AKHcS4uHcAIuLcO4txbiBw7h3EucQdxLh3DuLcQdxLh3Etz/OIuIO4l/OLcS4dxB3DuJcO4dwCi4uLcO4lxB3EuHcS4dxB3EuHcO4dwCi4txdxLh3AKHcS4dxLiDuLcO4dxLiDuLcO4dxLiDuJcO4dxbiDuLcO4lxcQdxbi3F3EOHcQdxL+cO4dw7gHDuHcO4twDh3DuHcS4g7iXDuHcW4g7iXDuLcO4dwChcO4lw7gChcO4lw7gFDuJcXDuAGLi3F3FuLiDuJbi4lw7gCh3DuJcO4g7h3EucXcA4dw7h3EO4oXF3DuHcAoXDuHcS4BQuHcO4lwCi4txcO4lxB3F3EuLcW4Bw7h3F3AOHcO4dw7gFDh3DuHcAoXDuJcXcAoXDuJcO4AIuLcO4lw7gChcO4lxbiDuJcO4dxLiDuJcO4dxbiDuJcO4dxbiDuJcO4dw7gHDuLcO4uAULcO4dxLiDuJcO4dxbiDuJcO4dxLiDuJcO4dxLiDuJcO4dxbiDuLcO4dxLiDuJcO4dxLiDuJcO4dxLiDuJcO4dxbiDuJcO4dw7gHDuHcS4uIO4lw7h3F3AKHcS4dxbgHDuHcS4dwCi4dw7h3AKHcS4dxLgBC3EuHcS4g7iXDuHcXcAoXDuJcO4BQlw7h3FuAGLi3DuLcW4g7h3EuLcW4Bw7h3FuIO4lw7h3FuIO4lw7h3FuAULcO4u4uIO4uHcS4dwAi4uLcO4lxB3EuHcS4dxB3EuHcS4dxB3EuHcO4txB3EuHcO4txB3EuHcS4dwCh3EuHcS4g7h3EuLcO4BQ7h3DuHcA4dw7h3DuAcO4dw7h3AKHcO4dw7gBFxcO4lxcAIW4lw7h3AOHcO4dw7gHDuHcO4dwAhbi3F3DuAGLi3DuHcO4BQ7h3DuHcA4dxbh3DuAcO4tw7h3AKFw7h3DuAcO4tw7h3AOHcW4dw7gHDuLcO4dwAha4txbh3AKHcS4dw7gBC3DuLcO4dwAhbiXDuHcA4dw7h3DuAELcO4dw7gHDuLcO4uAELi4dw7gHDuLcO4dwDh3FuHcO4Bw7i3DuHcAoXDuHcO4BQ7h3DuHcA4dxbh3DuAELh3DuHcA4dxbh3DuAcO4tw7h3AOHcW4dw7gBC4dw7i3AKHcS4dw7gBFxbi3DuHcAocW4lw7gChbiXDuHcO4AIuLcO4dxbgCh3DuHcS4BQuHcO4lwCi4txcO4lwCi4uHcO4dwAi4txbi4lwAhbh3DuHcA4dxbh3DuAcO4txbh3AKFw7h3DuAcO4txbh3AOHcW4dw7gHDuLcO4dwChcO4dw7gCh3DuHcO4Bw7i3DuHcA4dxbh3DuAcO4txbh3AOHcW4dw7gHDuLcO4dwCh3EuHcW4BQ7h3DuHcAoXDuHcS4AIuLcO4dxbgCh3DuHcS4BQuHcO4lwCi4txcO4lwCi4uHcO4dwAi4txbi4lwAhbh3DuHcA4dxbh3DuAcO4txbh3AKHcS4dw7gHDuLcO4dwDh3FuHcA4txcO4lwDh3F3DuHcA4dxbh3DuAcO4txbh3AOHcW4dxbgBC4dw7i3AOHcW4dw7gHDuLcW4uAELh3DuHcAoXDuJcS4BQuHcO4lxQuLcO4lwCi4u4dw7gBFxcW4lwAhbh3DuHcA4dxbh3DuAcO4txcO4BQ7h3DuHcA4dxbh3DuAcO4tw7gBFxcW4dwDh3FuHcO4dwDh3FuHcO4Bw7h3DuAcO4tw7h3AOHcW4dw7gHDuLcO4dwChbi3DuHcA4dxbh3DuAULcO4dw7gBFxcO4dwDh3FuHcO4BQ7h3DuHcA4dxbh3DuAcO4txdwAhcO4dw7gCh3EuHcW4BQuHcO4lwoXFuHcW4AIuLcO4lwAhbi3DuHcA4dxbh3DuAcO4tw7gFDh3DuHcA4dxbh3DuAcO4txcO4AIuLi3DuAcO4txcO4BQ4uLcO4Bw7i3DuHcA4dxbh3DuAcO4txbh3AOHcW4tw7gChbiXDuHcA4dxbh3DuAcO4txcO4AIuHcO4dwDh3FuHcO4BQ7h3DuHcA4dxbh3DuAcO4txbgBC4dw7h3AKHcW4tw7gChbiXDuJcKFxbi3FuHcA4dxbh3DuAcO4txbh3AOHcW4dw7gFDuLcO4dwDh3FuHcO4BQ7h3DuHcA4dxbh3DuAcO4txcO4AIuLcO4uAOHcW4dw7gFDh3DuHcA4dxbh3DuAcO4txbh3AOHcW4dw7gChbiXDuHcA4dxbh3DuAcO4tw7gFDuLcO4dwDh3FuHcAoXDuHcS4BQuHcO4lwCjcW4dxbgBC3DuHcS4AIuLcO4dxbgCh3DuHcS4BQuHcO4lwCi4txcO4lxQuLcO4dwAhbh3DuHcA4dxbh3DuAcO4txbgChw7h3DuAcO4txbh3AOHcW4lw7gFDuLcO4BQuHcO4twDh3FuHcAocW4lw7gHDuLcW4BQuLcO4dxA4dxbh3DuAcO4txbh3AKHFxLh3AOHcW4dxbgFD+cO4tw7gHDuLcO4dwChf+cO4l3AOHcW4dw7gFDuLcO4twDh3FuHcAocO4lw7gFD+cW4l3AKF/54dxbi4Bw7h3DuHcA4dxbi4dxQuLcO4dxQuLcO4dxA4dxbh3DuAUL/AM4lxLgFDh3DuHcAofz+cW4dwDh3FuLcO4BQ4txbi3AOHcW4lw7gFC4txLh3AKFxbh3FuAULh3DuHcAofz/OLcXcA4dxbh3DuAUL/AM4txLgFDuHcS4BQuLcO4dxA4dxbh3DuAcO4dxbh3AOHcO4dxbgChf8AnDuJcBQuLcW4dxQuHcS4twCjcO4dxbgFC4dw7i3AKH84lw7gHDuLcO4dwCi4txL+cO4BQ7iXDuAcO4lw7gFD+cO4lw7gCh3DuHcAocO4dw7gFDuLcO4dwCh3EuHcA4dxbh3DuAUL/AM4dxLh3AOHcW4tw7gCh/OLcS4dxQ4dxLh3AOHcO4dwDh3FuHcA4dxbh3DuAcO4lw7gChw7h3DuAcO4tw7gFDh3DuHcAocW4lw7gHDuLcW4dxQ/nHh3DuAcO4dxbgFD/AM4dxLh3AKFxbh3DuAcO4dw7gCh/OHcS4dwChw7h3DuAcO4tw7gFDh3EuHcA4dxbh3DuAcO4tw7gFDh3DuHcA4dxbh3DuAcO4txbh3AOHcO4u4dxQ/nHh3DuAcO4dxbgFC/8AOHcS4dwChcW4dw7gHDuHcO4BQuHcS4dxQ4dw7h3AKHEuHcS4Bw7i3F3AOHcO4u4dxQuLcO4dwCi4dxLh3AKFxbh3DuAULh3DuHcAIuHcO4dwCi4dxLh3AKFxbh3DuAcO4dxbgFD/84lw7gFDh3DuHcA4dxbh3DuAULh3DuHcA4dxbh3DuAULh3DuHcAocW4u4lwCi4dxLh3AKFxbh3DuAULh3DuHcAof/AJxbh3AOHcW4u4dxQ4uLcO4BQuHcO4dwChxbiXDuAULh3DuHcAocO4lxcA4dxbh3DuAcO4dxbgFD/8AOJcO4BQ4dw7h3AKHFuHcS4BQ4dxbi4dxA4dxL+cO4dxQuLcW4uIO4dxLh3AKFxbi4tw7gFC4tw7h3AKHcS4tw7gHDuLcO4BQuLcO4twCi4uHcS4dxQuLcW4tw7gFC4dxLh3AKHcS4dxLgFC4txbh3AKHcS4tw7gHDuLcW4dwChcW4dw7gChcO4lw7gFD+cO4u4BQuHcO4dxA4dxLh3DuAcO4lw7gHDuHcO4BQ7iXFw7gFDh3DuHcAofzi3DuAcO4dxbgFC/84lxbgChxbi3DuAULh3EuHcAocO4dxLgHDuLcO4u4BQuHcS4dxQ4dw7h3AOHcO4twChw7h3DuAcO4tw7gChw7h3DuAULh3EuAcO4lw7gFD/0DuHcO4BQ4dxLh3AOHcO4u4dwCh/OHcW4dwCi4dw7gHDuLcO4BQ4dxLh3AOHcO4tw7gHDuHcW4twCi4lw7i3AKHFuHcS4BQuHcO4twChf+cO4dwDh3FuHcAocO4dw7gHDuHcAofzi1EuAcO4tw7gFDuLcW4dwChxbh3EuAULh3DuLcAIuHcW4twChxbh3EuAUL/zi3DuAULh3FuLcQOHcO4dxbgHDuLcO4dwChxbh3DuAcO4u4dxbgFC4dw7i3AOHcO4lw7gBC/84dxLh3AKHcS4uAULh3DuHcA4dxbi3dxA4dxbh3DuAULiXDuHcAocO4u4dxbgCh/OHcO4dxbgFC4dxLh3AKHcS4tw7gBC/84lw7gChw7hbh3AOHcW4u4dwCh/OLcO4dwCi4dxLgHDuLcO4BQ4dxLh3AKHcS4tw7gChxbi3DuAcO4u4dxA4dxbh3DuAcO4lw7gChw7i3DuAcO4tw7gChxbi3DuAcO4txbgCh/84lw7gFDuHcO4twAhf+cO4dwCi4uLcO4BQ7iXDuAULh3DuHcA4dxbi3AOHcO4u4dwCh/OLcO4dwChxbi3DuAULh3DuAcO4tw7gChxbi3EuAULh3DuAcO4u4dxA4dxLh3AOHcO4twChxbh3DuAULh3DuAULh3DuHcAocO4tw7gFDuHcO4dwCh3DuHcAocO4lw7gBC/84lw7gCh7i3DuHcA4dxbh3AOHcO4lw7gHDuJcO4dxbgChxbh3DuAcO4tw7gChxbi3EuAULh3DuHcA4dxLh3AOHcO4u4Bw7h3DuHcAocO4lw7gFDuHcO4Bw7h3DuAcO4lw7gFDuHcO4twAhf+cO4dwCi4dxbh3AKHcS4tw7gHDuHcS4uAULi3DuHcA4dxbh3DuAcO4lw7gFDuLcO4dxA4dxLh3AOHcO4tw7gChxLh3DuAULh3DuAULh3DuHcA4dxLh3AKHcS4lw7gBC/84lxbgFC4dxbh3AOHcO4u4BQ/nEuHcW4dwCh/OHcO4dwChxbi3AOHcW4tw7gFC4tw7h3AKFxbi4u4dwChw7h3DuIO4dxLh3DuAcO4lw7gChw7h3DuAcO4tw7gHDuJcO4dxbgBC/84lw7gChw7i3DuAULh3DuHcA4dxLh3AOHcW4tw7gCh/OHcS4twCh/OHcO4twCi4dxLgHDuLcW4twChxbh3EuAULh3DuHcA4dxbh3DuAcO4tw7gChxbh3DuAcO4tw7gFDuJcO4dwDh3EuLcO4BQ/nH/Z' },
-    { id: 'U002', name: 'Sarah Connor', email: 's.connor@bws.com', username: 'sconnor', password: 'password123', roles: ['User', 'Inventory Manager'], designation: 'Plant Manager', status: 'Active' },
-    { id: 'U003', name: 'Kyle Reese', email: 'k.reese@bws.com', username: 'kreese', password: 'password123', roles: ['User', 'Logistics'], designation: 'Logistics Coordinator', status: 'Blocked' },
+    { id: 'U001', name: 'Admin User', email: 'admin@bws.com', username: 'admin', password: 'bws123', roles: ['Admin'], designation: 'System Administrator', status: 'Active' },
 ];
-
-export const mockAuditLogs: AuditLog[] = [
-    { id: 'AL-001', timestamp: '2023-10-28 09:15:23', user: 'Admin User', type: 'Inventory', action: 'CREATE', details: 'Added new product "Type A Gravel" (SKU: GR-A-150)' },
-    { id: 'AL-002', timestamp: '2023-10-28 10:05:00', user: 'Kyle Reese', type: 'Sales', action: 'UPDATE', details: 'Order SO-101 status changed to Fulfilled' },
-    { id: 'AL-003', timestamp: '2023-10-27 14:30:10', user: 'Sarah Connor', type: 'Purchase', action: 'CREATE', details: 'Created Purchase Order PO-202 for 1000 Cubic Meters of sand' },
-    { id: 'AL-004', timestamp: '2023-10-27 16:45:00', user: 'Admin User', type: 'User Management', action: 'CREATE', details: 'Added new user "Kyle Reese"' },
-    { id: 'AL-005', timestamp: '2023-10-26 11:00:00', user: 'Sarah Connor', type: 'Inventory', action: 'UPDATE', details: 'Stock for "Asphalt Mix" adjusted by -750 Tons for Order SO-102' },
-];
-
-// This data is a summary of audit logs for a more concise display on the dashboard.
-export const mockRecentActivity = [
-    { id: 'AL-001', user: 'Admin User', action: 'Added product: "Type A Gravel"', timestamp: '2023-10-28 09:15' },
-    { id: 'AL-002', user: 'Kyle Reese', action: 'Order SO-101 Fulfilled', timestamp: '2023-10-28 10:05' },
-    { id: 'AL-003', user: 'Sarah Connor', action: 'Created PO-202', timestamp: '2023-10-27 14:30' },
-    { id: 'AL-004', user: 'Admin User', action: 'Added user: "Kyle Reese"', timestamp: '2023-10-27 16:45' },
-    { id: 'AL-005', user: 'Sarah Connor', action: 'Adjusted stock for "Asphalt Mix"', timestamp: '2023-10-26 11:00' },
-];
-
+// FIX: Added mock data for sales charts, recent activity, and audit logs to resolve import errors.
 export const mockSalesDataForChart = [
     { name: 'Jan', sales: 4000, profit: 2400 },
     { name: 'Feb', sales: 3000, profit: 1398 },
-    { name: 'Mar', sales: 5000, profit: 9800 },
-    { name: 'Apr', sales: 4500, profit: 3908 },
-    { name: 'May', sales: 6000, profit: 4800 },
-    { name: 'Jun', sales: 5500, profit: 3800 },
-    { name: 'Jul', sales: 7000, profit: 4300 },
+    { name: 'Mar', sales: 2000, profit: 9800 },
+    { name: 'Apr', sales: 2780, profit: 3908 },
+    { name: 'May', sales: 1890, profit: 4800 },
+    { name: 'Jun', sales: 2390, profit: 3800 },
+    { name: 'Jul', sales: 3490, profit: 4300 },
 ];
 
-export const mockStockVsSold = mockProducts.map(p => ({
-    name: p.name,
-    stock: p.stock,
-    sold: Math.floor(Math.random() * (p.stock + 50)) + 10 // Mock sold data
-}));
+export const mockRecentActivity = [
+    { id: 1, user: 'Admin User', action: 'Fulfilled Sales Order #SO-104', timestamp: '2 hours ago' },
+    { id: 2, user: 'John Flint', action: 'Received Purchase Order #PO-206', timestamp: '5 hours ago' },
+    { id: 3, user: 'Sarah Connor', action: 'Added new customer: Metro Roadworks', timestamp: '1 day ago' },
+    { id: 4, user: 'Jane Slate', action: 'Updated stock for "Type A Gravel"', timestamp: '1 day ago' },
+    { id: 5, user: 'Admin User', action: 'Blocked user account: Kyle Reese', timestamp: '2 days ago' },
+];
+
+export const mockAuditLogs: AuditLog[] = [
+    { id: 'A001', timestamp: '2023-11-20 14:00:00', user: 'Jane Slate', type: 'Purchase', action: 'Created Purchase Order', details: 'Order PO-212 created for 5000 units of Type A Gravel (1.5")' },
+    { id: 'A002', timestamp: '2023-11-20 10:00:00', user: 'John Flint', type: 'Purchase', action: 'Received Purchase Order', details: 'Order PO-211 marked as received.' },
+    { id: 'A003', timestamp: '2023-11-18 11:10:00', user: 'Sarah Connor', type: 'Sales', action: 'Created Sales Order', details: 'Order SO-112 created for Urban Developers.' },
+    { id: 'A004', timestamp: '2023-11-18 10:30:00', user: 'Jane Slate', type: 'Purchase', action: 'Created Purchase Order', details: 'Order PO-211 created for LabEquip.' },
+    { id: 'A005', timestamp: '2023-11-17 09:00:00', user: 'Admin User', type: 'User Management', action: 'Updated User Role', details: 'Role for user "John Flint" changed to "Warehouse Manager".' },
+    { id: 'A006', timestamp: '2023-11-16 14:00:00', user: 'Kyle Reese', type: 'Sales', action: 'Fulfilled Sales Order', details: 'Order SO-111 marked as fulfilled.' },
+    { id: 'A007', timestamp: '2023-11-16 10:00:00', user: 'Admin User', type: 'Inventory', action: 'Stock Adjustment', details: 'Adjusted stock for "Washed Concrete Sand" by -50 units. Reason: Damage.' },
+];

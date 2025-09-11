@@ -1,10 +1,11 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
-import { useData } from '../context/DataContext';
 import { SunIcon, MoonIcon, MenuIcon, BellIcon, DownloadIcon } from './IconComponents';
 import FontSizeSelector from './FontSizeSelector';
+import { useNavigate } from 'react-router-dom';
 
 interface HeaderProps {
     setSidebarOpen: (open: boolean) => void;
@@ -12,8 +13,8 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ setSidebarOpen }) => {
     const { theme, toggleTheme } = useTheme();
-    const { currentUser, login } = useAuth();
-    const { users } = useData();
+    const { currentUser, logout } = useAuth();
+    const navigate = useNavigate();
     const [notificationsOpen, setNotificationsOpen] = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
     const [isPushSupported, setIsPushSupported] = useState(false);
@@ -55,10 +56,10 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen }) => {
         };
     }, []);
 
-    const handleUserSwitch = (userId: string) => {
-        login(userId);
-        setProfileOpen(false);
-    };
+    const handleLogout = () => {
+        logout();
+        navigate('/login');
+    }
 
     const requestNotificationPermission = async () => {
         if (!isPushSupported) return;
@@ -201,16 +202,12 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen }) => {
                                 <p className="text-xs text-gray-500 dark:text-gray-400">{currentUser?.roles.join(', ')} - {currentUser?.designation}</p>
                             </div>
                             <div className="p-2">
-                                <p className="text-xs text-gray-400 mb-1">Switch User (Demo)</p>
-                                {users.map(user => (
-                                    <button
-                                        key={user.id}
-                                        onClick={() => handleUserSwitch(user.id)}
-                                        className={`w-full text-left px-2 py-1.5 text-sm rounded-md ${currentUser?.id === user.id ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-                                    >
-                                        {user.name}
-                                    </button>
-                                ))}
+                                <button
+                                    onClick={handleLogout}
+                                    className="w-full text-left px-2 py-1.5 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                                >
+                                    Logout
+                                </button>
                             </div>
                         </div>
                     )}

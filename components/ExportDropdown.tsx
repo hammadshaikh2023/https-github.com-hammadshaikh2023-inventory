@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -14,7 +15,8 @@ interface ExportDropdownProps<T> {
     fileName: string;
 }
 
-const ExportDropdown = <T,>({ data, columns, fileName }: ExportDropdownProps<T>) => {
+// FIX: Corrected generic type syntax to be unambiguous for the TSX parser by using `<T extends {}>`. This resolves numerous parsing errors.
+const ExportDropdown = <T extends {}>({ data, columns, fileName }: ExportDropdownProps<T>) => {
     const [isOpen, setIsOpen] = useState(false);
 
     const handlePrint = () => {
@@ -45,7 +47,10 @@ const ExportDropdown = <T,>({ data, columns, fileName }: ExportDropdownProps<T>)
         const doc = new jsPDF();
         (doc as any).autoTable({
             head: [columns.map(c => c.header)],
-            body: data.map(row => columns.map(col => row[col.accessor])),
+            body: data.map(row => columns.map(col => {
+                const value = row[col.accessor];
+                return value === null || value === undefined ? '' : String(value);
+            })),
         });
         doc.save(`${fileName}.pdf`);
         setIsOpen(false);
@@ -59,7 +64,7 @@ const ExportDropdown = <T,>({ data, columns, fileName }: ExportDropdownProps<T>)
 
         const html = `
             <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-                <head><meta charset='utf-8'><title>Export HTML to Word</title></head>
+                <head><meta charSet='utf-8'><title>Export HTML to Word</title></head>
                 <body>
                     <table>
                         <thead>${headerHtml}</thead>

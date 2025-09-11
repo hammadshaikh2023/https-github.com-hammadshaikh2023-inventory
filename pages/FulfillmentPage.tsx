@@ -1,12 +1,14 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
-import { SalesOrder, GatePass } from '../types';
+import { SalesOrder, GatePass, Reminder, PackingSlip, ShippingLabel } from '../types';
 import { useData } from '../context/DataContext';
 import { PrinterIcon, DownloadIcon, ClockIcon } from '../components/IconComponents';
+
+// Company logo for branded documents
+const BWS_LOGO = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAARgAAACvCAMAAADob2qvAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyJpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMy1jMDExIDY2LjE0NTY2MSwgMjAxMi8wMi8wNi0xNDo1NjoyNyAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENTNiAoV2luZG93cykiIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6NkE0NEQyNTdEMUM1MTFFNEI0M0JFNjNCODBEREE5MTQiIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6NkE0NEQyNThEMUM1MTFFNEI0M0JFNjNCODBEREE5MTQiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDo2QTQ0RDI1NUQxQzUxMUU0QjQzQkU2M0I4MERERDkxNCIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDo2QTQ0RDI1NkQxQzUxMUU0QjQzQkU2M0I4MERERDkxNCIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/Ps63Z5cAAAC5SURBVHja7N1ncsIwEAVQNrfS3b/S3X+p0+L0YpI2V98QcTzm9/zNS2lMmqZpmu5fPj/+/v39+/fL9++fPj19+7Isy/7+1y+3P/758+fz52/n9++/f/789e/X+/s/LMvy52/n9a+fdz+u9+vP2y/7//39+8/Pz98/f/r8e31/LcvS76/P/+2X/3+9fv7+f/r5/+f6/f/1359//+fz8/f/f/n8+P33v37+/H79/PuH+/fP28/vP6/f/17/P7/vP7/evn5+/v37/ev3/5+3n9f7969fP7//fv/99+/v3z8/v/7+//r8+/v796+f37/+/f/9+v2P9+9fv3/+8/Pz9/f/1++f6+/f//f/5++/f/7++9/v718/f37/fvn++9ev/3/+8/f/9fP39/f/9ev7/8/P38+v/+9//9//v/73/fv/68//+fv+58+/+vP7/+v/7z9//v7z/fv/9fP/v39/33/9+//r/f/r++/P//fv37+/f3+///7z/+/v689/vf/+/fn/7c+f//7++/3z++//P/95+3n/6/f/33/7+f/f/9+/v/+///z++vP/v/+8/v/+v77+f/f/9f33/5/fn/+///763/3nx88AQIAAQIE+AUECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgQIAAAQIECBAgAABYlwADADn1Q+dM8o/VAAAAAElFTkSuQmCC";
 
 // Custom hook for debouncing a value.
 function useDebounce<T>(value: T, delay: number): T {
@@ -38,18 +40,19 @@ const PackingSlipModal: React.FC<{
         if (!order) return;
         const doc = new jsPDF();
         
-        // Title
+        // Logo and Title
+        doc.addImage(BWS_LOGO, 'PNG', 15, 10, 40, 12);
         doc.setFontSize(20);
-        doc.text("Packing Slip", 105, 20, { align: 'center' });
+        doc.text("Packing Slip", 200, 20, { align: 'right' });
         doc.setFontSize(12);
-        doc.text(`Order ID: ${order.id}`, 105, 28, { align: 'center' });
+        doc.text(`Order ID: ${order.id}`, 200, 28, { align: 'right' });
 
         // Addresses
         doc.setFontSize(10);
-        doc.text("FROM:", 20, 40);
+        doc.text("FROM:", 15, 40);
         doc.setFontSize(12);
-        doc.text("BWS Inc.", 20, 46);
-        doc.text("123 Industrial Ave, Gravelton", 20, 52);
+        doc.text("BWS Inc.", 15, 46);
+        doc.text("123 Industrial Ave, Gravelton", 15, 52);
 
         doc.setFontSize(10);
         doc.text("SHIP TO:", 110, 40);
@@ -77,7 +80,7 @@ const PackingSlipModal: React.FC<{
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={`Packing Slip for Order #${order.id}`}>
-            <div className="printable-content space-y-6 text-gray-800">
+            <div className="printable-content space-y-6 text-gray-800 dark:text-gray-200">
                 <header className="text-center">
                     <h2 className="text-2xl font-bold">Packing Slip</h2>
                     <p>Order ID: {order.id}</p>
@@ -145,7 +148,7 @@ const ShippingLabelModal: React.FC<{
     if (!order) return null;
 
     const handleSavePdf = () => {
-        if (!order) return;
+        if (!order) return null;
         const doc = new jsPDF({
             orientation: 'p',
             unit: 'mm',
@@ -153,10 +156,8 @@ const ShippingLabelModal: React.FC<{
         });
 
         // Border
-        // FIX: Replaced deprecated jsPDF method 'setDashPattern' with 'setLineDashPattern'.
         doc.setLineDashPattern([2, 2], 0);
         doc.rect(5, 5, 90, 140);
-        // FIX: Replaced deprecated jsPDF method 'setDashPattern' with 'setLineDashPattern'.
         doc.setLineDashPattern([], 0);
 
         // From Address
@@ -561,9 +562,11 @@ const FulfillmentPage: React.FC = () => {
     
     const renderActions = (order: SalesOrder) => {
         const hasGatePass = gatePasses.some(gp => gp.orderId === order.id);
+        const hasPackingSlip = packingSlips.some(p => p.orderId === order.id);
+        const hasShippingLabel = shippingLabels.some(l => l.orderId === order.id);
 
         const handlePackingSlipClick = () => {
-            if (!packingSlips.some(p => p.orderId === order.id)) {
+            if (!hasPackingSlip) {
                 addPackingSlip({ orderId: order.id });
             }
             setSelectedOrder(order);
@@ -571,7 +574,7 @@ const FulfillmentPage: React.FC = () => {
         };
 
         const handleShippingLabelClick = () => {
-            if (!shippingLabels.some(l => l.orderId === order.id)) {
+            if (!hasShippingLabel) {
                 addShippingLabel({ orderId: order.id });
             }
             setSelectedOrder(order);
@@ -580,16 +583,20 @@ const FulfillmentPage: React.FC = () => {
         
         return (
             <div className="flex flex-col sm:flex-row gap-2 items-start">
-                <button onClick={handlePackingSlipClick} className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-md dark:bg-blue-900/50 dark:text-blue-300 w-full text-left">Packing Slip</button>
-                <button onClick={handleShippingLabelClick} className="px-3 py-1 text-sm bg-green-100 text-green-700 rounded-md dark:bg-green-900/50 dark:text-green-300 w-full text-left">Shipping Label</button>
                 <button
                     onClick={() => {
                         setSelectedOrder(order);
                         setReminderModalOpen(true);
                     }}
-                    className="px-3 py-1 text-sm bg-yellow-100 text-yellow-700 rounded-md dark:bg-yellow-900/50 dark:text-yellow-300 w-full text-left"
+                    className="px-3 py-1 text-sm bg-yellow-100 text-yellow-700 rounded-md dark:bg-yellow-900/50 dark:text-yellow-300 w-full text-left whitespace-nowrap"
                 >
                     Set Reminder
+                </button>
+                <button onClick={handlePackingSlipClick} className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-md dark:bg-blue-900/50 dark:text-blue-300 w-full text-left whitespace-nowrap">
+                    {hasPackingSlip ? 'View Packing Slip' : 'Generate Packing Slip'}
+                </button>
+                <button onClick={handleShippingLabelClick} className="px-3 py-1 text-sm bg-green-100 text-green-700 rounded-md dark:bg-green-900/50 dark:text-green-300 w-full text-left whitespace-nowrap">
+                    {hasShippingLabel ? 'View Shipping Label' : 'Generate Shipping Label'}
                 </button>
                 <button 
                     onClick={() => {

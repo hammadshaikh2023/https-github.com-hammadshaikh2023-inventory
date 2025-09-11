@@ -9,6 +9,24 @@ import { PlusIcon } from '../components/IconComponents';
 import ExportDropdown from '../components/ExportDropdown';
 import CurrencySelector from '../components/CurrencySelector';
 
+// Custom hook for debouncing a value.
+function useDebounce<T>(value: T, delay: number): T {
+    const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+    useEffect(() => {
+        // Set up a timer to update the debounced value after the specified delay.
+        const handler = setTimeout(() => {
+            setDebouncedValue(value);
+        }, delay);
+
+        // Clean up the timer if the value or delay changes before the timer fires.
+        return () => {
+            clearTimeout(handler);
+        };
+    }, [value, delay]); // Only re-call effect if value or delay changes
+
+    return debouncedValue;
+}
 
 export const CreatePurchaseOrderModal: React.FC<{
     isOpen: boolean;
@@ -359,6 +377,33 @@ const PurchasesPage: React.FC = () => {
     const [isCreateModalOpen, setCreateModalOpen] = useState(false);
     const [isViewModalOpen, setViewModalOpen] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState('All');
+    const [dateFrom, setDateFrom] = useState('');
+    const [dateTo, setDateTo] = useState('');
+    
+    const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
+    const filteredPurchaseOrders = useMemo(() => {
+        return purchaseOrders
+            .filter(order => {
+                const term = debouncedSearchTerm.toLowerCase();
+                return order.id.toLowerCase().includes(term) ||
+                       order.vendor.name.toLowerCase().includes(term);
+            })
+            .filter(order => statusFilter === 'All' || order.status === statusFilter)
+            .filter(order => {
+                if (!dateFrom && !dateTo) return true;
+                const orderDate = new Date(order.date);
+                if (dateFrom && orderDate < new Date(dateFrom)) {
+                    return false;
+                }
+                if (dateTo && orderDate > new Date(dateTo)) {
+                    return false;
+                }
+                return true;
+            });
+    }, [purchaseOrders, debouncedSearchTerm, statusFilter, dateFrom, dateTo]);
 
     const handleViewOrder = (order: PurchaseOrder) => {
         setSelectedOrder(order);
@@ -379,7 +424,7 @@ const PurchasesPage: React.FC = () => {
         }},
     ];
 
-    const exportableData = purchaseOrders.map(order => ({
+    const exportableData = filteredPurchaseOrders.map(order => ({
         ...order,
         vendor: order.vendor.name, // Flatten vendor object for export
     }));
@@ -399,11 +444,50 @@ const PurchasesPage: React.FC = () => {
                     )}
                 </div>
             </div>
-            <DataTable columns={columns} data={purchaseOrders} renderActions={(order) => (
-                <div className="space-x-2 no-print">
-                    <button onClick={() => handleViewOrder(order)} className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium">View Details</button>
+
+            <div className="p-4 bg-white dark:bg-gray-800 rounded-xl shadow-lg grid grid-cols-1 md:grid-cols-4 gap-4 items-center no-print">
+                <div className="md:col-span-2">
+                    <label htmlFor="purchase_search" className="sr-only">Search</label>
+                    <input 
+                        id="purchase_search"
+                        type="text"
+                        placeholder="Search by Order ID or Vendor..."
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                        className="w-full"
+                    />
                 </div>
-            )} />
+                <div>
+                    <label htmlFor="purchase_status" className="sr-only">Status</label>
+                    <select id="purchase_status" value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="w-full">
+                        <option value="All">All Statuses</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Received">Received</option>
+                        <option value="Cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div className="flex items-center gap-2">
+                    <label htmlFor="purchase_date_from" className="sr-only">Date From</label>
+                    <input 
+                        id="purchase_date_from"
+                        type="date"
+                        value={dateFrom}
+                        onChange={e => setDateFrom(e.target.value)}
+                        className="w-full"
+                    />
+                     <span className="text-gray-500 dark:text-gray-400">-</span>
+                     <label htmlFor="purchase_date_to" className="sr-only">Date To</label>
+                    <input 
+                        id="purchase_date_to"
+                        type="date"
+                        value={dateTo}
+                        onChange={e => setDateTo(e.target.value)}
+                        className="w-full"
+                    />
+                </div>
+            </div>
+
+            <DataTable columns={columns} data={filteredPurchaseOrders} onViewDetails={handleViewOrder} />
             <CreatePurchaseOrderModal isOpen={isCreateModalOpen} onClose={() => setCreateModalOpen(false)} />
             <ViewPurchaseOrderModal isOpen={isViewModalOpen} onClose={() => setViewModalOpen(false)} order={selectedOrder} />
         </div>
