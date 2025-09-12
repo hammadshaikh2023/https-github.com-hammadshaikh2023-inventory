@@ -12,16 +12,10 @@ const SYNC_STORE_NAME = 'sync-queue';
 const urlsToCache = [
   './', // The root of the app
   './index.html',
-  './index.tsx', // The main JS entry point
   './manifest.json',
   'https://cdn.tailwindcss.com',
-  // Key dependencies from esm.sh for basic offline functionality
-  "https://esm.sh/react@18.2.0",
-  "https://esm.sh/react@18.2.0/jsx-runtime",
-  "https://esm.sh/react-dom@18.2.0",
-  "https://esm.sh/react-dom@18.2.0/client",
-  "https://esm.sh/react-router-dom@6.23.1?deps=react@18.2.0",
-  "https://esm.sh/recharts@2.12.7?deps=react@18.2.0",
+  // Dependencies from esm.sh have been removed as they are now bundled by Vite.
+  // The bundled JS/CSS files will be cached by the fetch event handler on first load.
 ];
 
 // Install event: Pre-cache the application shell.
