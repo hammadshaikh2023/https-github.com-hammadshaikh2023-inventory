@@ -3,16 +3,13 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 
-// Logo from the public folder.
-const logoSrc = "./mainlogo.png";
-
 const LoginPage: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { login } = useAuth();
     const { users } = useData();
-    const [username, setUsername] = useState('admin');
-    const [password, setPassword] = useState('bws123');
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     
@@ -46,7 +43,10 @@ const LoginPage: React.FC = () => {
         <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 px-4">
             <div className="w-full max-w-md space-y-8 animate-zoomIn">
                 <div className="text-center">
-                    <img className="mx-auto h-16 w-auto" src={logoSrc} alt="BWS Inventory Logo" />
+                    <div className="mx-auto h-16 w-auto flex items-center justify-center text-3xl font-bold" aria-label="BWS Inventory">
+                        <span style={{ color: '#EF7722' }}>BWS</span>
+                        <span style={{ color: '#37353E' }} className="dark:text-gray-200"> Inventory</span>
+                    </div>
                     <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
                         Sign in to your account
                     </h2>
@@ -67,7 +67,7 @@ const LoginPage: React.FC = () => {
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
                                 className="relative block w-full appearance-none rounded-none rounded-t-md border border-gray-300 px-3 py-3 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white"
-                                placeholder="Username"
+                                placeholder="User name"
                             />
                         </div>
                         <div>

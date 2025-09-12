@@ -1,9 +1,7 @@
-
-
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
-import { SunIcon, MoonIcon, MenuIcon, BellIcon, DownloadIcon } from './IconComponents';
+import { BulbOnIcon, BulbOffIcon, MenuIcon, BellIcon, DownloadIcon } from './IconComponents';
 import FontSizeSelector from './FontSizeSelector';
 import { useNavigate } from 'react-router-dom';
 
@@ -134,7 +132,7 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen }) => {
                     className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none"
                     aria-label="Toggle theme"
                 >
-                    {theme === 'light' ? <MoonIcon className="w-5 h-5" /> : <SunIcon className="w-5 h-5" />}
+                    {theme === 'light' ? <BulbOnIcon className="w-5 h-5" /> : <BulbOffIcon className="w-5 h-5" />}
                 </button>
                 
                 <div className="relative">

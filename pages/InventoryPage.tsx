@@ -6,10 +6,11 @@ import BarcodeScanner from '../components/BarcodeScanner';
 import ExportDropdown from '../components/ExportDropdown';
 import CurrencySelector from '../components/CurrencySelector';
 import { useData } from '../context/DataContext';
-import { Product, Currency } from '../types';
+import { Product, Currency, HistoryEntry } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
 import { QrCodeIcon, PlusIcon, CloseIcon, SearchIcon, MinusIcon, ArrowUpIcon, ArrowDownIcon, PrinterIcon } from '../components/IconComponents';
+import Dropdown from '../components/Dropdown';
 
 export const AddEditProductModal: React.FC<{
     isOpen: boolean,
@@ -295,32 +296,30 @@ const UpdateStockModal: React.FC<{
     isOpen: boolean;
     onClose: () => void;
     product: Product | null;
-}> = ({ isOpen, onClose, product }) => {
+    initialAction: 'add' | 'remove';
+}> = ({ isOpen, onClose, product, initialAction }) => {
     const { updateProductStock } = useData();
     const { currentUser } = useAuth();
     const [quantity, setQuantity] = useState(1);
-    const [action, setAction] = useState<'add' | 'remove'>('add');
+    const [action, setAction] = useState<'add' | 'remove'>(initialAction);
     const [reason, setReason] = useState('');
 
     useEffect(() => {
         if (isOpen) {
             setQuantity(1);
-            setAction('add');
+            setAction(initialAction);
             setReason('');
         }
-    }, [isOpen]);
+    }, [isOpen, initialAction]);
 
     if (!product) return null;
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!reason.trim()) {
-            alert('A reason for the stock adjustment is required.');
-            return;
-        }
+        const finalReason = reason.trim() || 'Manual stock adjustment'; // Default reason if none provided
         const quantityChange = action === 'add' ? quantity : -quantity;
         if (currentUser) {
-            updateProductStock(product.id, quantityChange, reason.trim(), currentUser.name);
+            updateProductStock(product.id, quantityChange, finalReason, currentUser.name);
         }
         onClose();
     };
@@ -349,13 +348,12 @@ const UpdateStockModal: React.FC<{
                     <p className="text-sm text-red-500">Cannot remove more stock than is available.</p>
                 )}
                 <div>
-                    <label htmlFor="stock-adjustment-reason" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Reason for Adjustment</label>
+                    <label htmlFor="stock-adjustment-reason" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Reason for Adjustment (Optional)</label>
                     <textarea
                         id="stock-adjustment-reason"
                         value={reason}
                         onChange={e => setReason(e.target.value)}
                         rows={3}
-                        required
                         className="mt-1 block w-full"
                         placeholder="e.g., Damaged stock, Received from PO #123, Manual correction..."
                     />
@@ -409,6 +407,12 @@ const getExpiryStatus = (item: Product): number => {
     return 2; // Not expiring soon, sort third
 };
 
+const qualitySortOrder: Record<Product['qualityTestStatus'], number> = {
+    'Failed': 0,
+    'Pending': 1,
+    'Passed': 2,
+};
+
 
 const InventoryPage: React.FC = () => {
     const { currentUser } = useAuth();
@@ -418,6 +422,7 @@ const InventoryPage: React.FC = () => {
     const [isUpdateStockModalOpen, setUpdateStockModalOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
+    const [initialStockAction, setInitialStockAction] = useState<'add' | 'remove'>('add');
     
     // State for bulk action modals
     const [isDeleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -451,18 +456,28 @@ const InventoryPage: React.FC = () => {
             })
             .filter(p => 
                 p.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) || 
-                p.sku.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+                p.sku.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+                p.batchNumber.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
             );
     }, [products, debouncedSearchTerm, statusFilter, categoryFilter, expiryFilter]);
     
     const categories = ['All', ...Array.from(new Set(products.map(p => p.category)))];
+    const categoryOptions = categories.map(c => ({ value: c, label: c === 'All' ? 'All Categories' : c }));
+    const statusOptions = [
+        { value: 'All', label: 'All Statuses' },
+        { value: 'In Stock', label: 'In Stock' },
+        { value: 'Low Stock', label: 'Low Stock' },
+        { value: 'Out of Stock', label: 'Out of Stock' }
+    ];
+    const expiryOptions = [
+        { value: 'All', label: 'All Expiry Statuses' },
+        { value: 'Expiring Soon', label: 'Expiring Soon' },
+        { value: 'Expired', label: 'Expired' }
+    ];
 
-    const totalStockForCategory = useMemo(() => {
-        const productsToSum = (categoryFilter === 'All')
-            ? products
-            : products.filter(p => p.category === categoryFilter);
-        return productsToSum.reduce((sum, p) => sum + p.stock, 0);
-    }, [products, categoryFilter]);
+    const totalStockValue = useMemo(() => {
+        return filteredProducts.reduce((sum, p) => sum + (p.stock * p.price), 0);
+    }, [filteredProducts]);
 
 
     const handleAddProduct = () => {
@@ -475,8 +490,9 @@ const InventoryPage: React.FC = () => {
         setAddEditModalOpen(true);
     };
 
-    const handleUpdateStock = (product: Product) => {
+    const handleUpdateStock = (product: Product, action: 'add' | 'remove') => {
         setSelectedProduct(product);
+        setInitialStockAction(action);
         setUpdateStockModalOpen(true);
     };
     
@@ -608,12 +624,20 @@ const InventoryPage: React.FC = () => {
                         : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
             return <span className={`px-2 py-1 text-xs font-semibold rounded-full ${color}`}>{item.status}</span>;
         }},
-         { header: 'Quality', accessor: 'qualityTestStatus' as keyof Product, sortable: true, render: (item: Product) => {
-            const color = item.qualityTestStatus === 'Passed' ? 'text-green-500' 
-                        : item.qualityTestStatus === 'Pending' ? 'text-yellow-500' 
-                        : 'text-red-500';
-            return <span className={`font-medium ${color}`}>{item.qualityTestStatus}</span>;
-        }},
+         { 
+            header: 'Quality', 
+            accessor: 'qualityTestStatus' as keyof Product, 
+            sortable: true, 
+            sortFn: (a: Product, b: Product) => {
+                return (qualitySortOrder[a.qualityTestStatus] ?? 99) - (qualitySortOrder[b.qualityTestStatus] ?? 99);
+            },
+            render: (item: Product) => {
+                const color = item.qualityTestStatus === 'Passed' ? 'text-green-500' 
+                            : item.qualityTestStatus === 'Pending' ? 'text-yellow-500' 
+                            : 'text-red-500';
+                return <span className={`font-medium ${color}`}>{item.qualityTestStatus}</span>;
+            }
+        },
     ];
 
     const renderActions = (item: Product) => {
@@ -623,138 +647,97 @@ const InventoryPage: React.FC = () => {
         return (
             <div className="flex items-center space-x-1">
                 <button
-                    onClick={() => handleUpdateStock(item)}
+                    onClick={() => handleUpdateStock(item, 'add')}
                     className="p-1 rounded-full text-gray-500 hover:text-green-600 hover:bg-green-100 dark:hover:bg-gray-700"
-                    title="Increase stock"
-                >
-                    <PlusIcon className="w-4 h-4" />
+                    title="Add Stock">
+                    <PlusIcon className="w-5 h-5" />
                 </button>
-                 <button
-                    onClick={() => handleUpdateStock(item)}
+                <button
+                    onClick={() => handleUpdateStock(item, 'remove')}
                     className="p-1 rounded-full text-gray-500 hover:text-red-600 hover:bg-red-100 dark:hover:bg-gray-700"
-                    title="Decrease stock"
-                >
-                    <MinusIcon className="w-4 h-4" />
+                    title="Remove Stock">
+                    <MinusIcon className="w-5 h-5" />
+                </button>
+                <button
+                    onClick={() => handleEditProduct(item)}
+                    className="p-1 rounded-full text-gray-500 hover:text-indigo-600 hover:bg-indigo-100 dark:hover:bg-gray-700"
+                    title="Edit Product">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
                 </button>
             </div>
-        )
+        );
     };
-    
-    const exportColumns = columns
-        .filter(c => c.header !== 'Image') // Exclude the image column from exports
-        .map(c => ({ header: c.header, accessor: c.accessor }));
 
     return (
         <div className="space-y-6">
+            {/* Header section */}
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                 <h2 className="text-3xl font-bold text-gray-800 dark:text-white">Inventory</h2>
-                <div className="flex items-center space-x-2">
-                    <button onClick={() => setScannerOpen(true)} className="flex items-center px-4 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors no-print">
-                        <QrCodeIcon className="w-5 h-5 mr-2" />
-                        Scan
-                    </button>
-                    <button onClick={() => window.print()} className="flex items-center px-4 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors no-print">
-                        <PrinterIcon className="w-5 h-5 mr-2" />
-                        Print
-                    </button>
-                     <ExportDropdown
-                        data={filteredProducts}
-                        columns={exportColumns}
-                        fileName="Inventory_Report"
-                    />
-                    {currentUser?.roles.includes('Admin') && (
-                        <button onClick={handleAddProduct} className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors no-print">
+                <div className="flex items-center space-x-2 no-print">
+                    <ExportDropdown data={filteredProducts} columns={columns.filter(c => c.accessor !== 'imageUrl')} fileName="Inventory_Report" />
+                    {(currentUser?.roles.includes('Admin') || currentUser?.roles.includes('Inventory Manager')) && (
+                        <button onClick={handleAddProduct} className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
                             <PlusIcon className="w-5 h-5 mr-2" />
                             Add Product
                         </button>
                     )}
                 </div>
             </div>
-
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg px-4 pt-2 no-print">
-                <div className="border-b border-gray-200 dark:border-gray-700">
-                    <nav className="-mb-px flex space-x-6 overflow-x-auto">
-                        {categories.map(cat => (
-                            <button
-                                key={cat}
-                                onClick={() => setCategoryFilter(cat)}
-                                className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm focus:outline-none ${
-                                    categoryFilter === cat
-                                        ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200'
-                                }`}
-                            >
-                                {cat}
-                            </button>
-                        ))}
-                    </nav>
+            
+            {/* Summary cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 no-print">
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-lg text-center">
+                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Products</h4>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">{products.length}</p>
+                </div>
+                 <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-lg text-center">
+                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Stock Value</h4>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">${totalStockValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                </div>
+                 <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-lg text-center">
+                    <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">Low Stock Items</h4>
+                    <p className="text-2xl font-bold text-yellow-500">{products.filter(p => p.status === 'Low Stock').length}</p>
                 </div>
             </div>
 
+            {/* Filters and Search section */}
             <div className="p-4 bg-white dark:bg-gray-800 rounded-xl shadow-lg space-y-4 md:space-y-0 md:flex md:items-center md:justify-between no-print">
-                <div className="relative w-full md:w-1/3">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <SearchIcon className="h-5 w-5 text-gray-400" />
+                <div className="flex items-center gap-2 flex-grow md:max-w-lg">
+                    <div className="relative flex-grow">
+                        <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                            <SearchIcon className="w-5 h-5 text-gray-400" />
+                        </span>
+                        <input
+                            id="inventory-search"
+                            type="text"
+                            placeholder="Search by Name, Batch # or SKU..."
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            className="w-full"
+                        />
                     </div>
-                    <input
-                        type="text"
-                        placeholder="Search by name or SKU..."
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
-                        className="w-full shadow-sm rounded-md pl-10 pr-10"
-                    />
-                    {searchTerm && (
-                        <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                            <button
-                                type="button"
-                                onClick={() => setSearchTerm('')}
-                                className="p-1 rounded-full text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none"
-                                aria-label="Clear search"
-                            >
-                                <CloseIcon className="h-4 w-4" />
-                            </button>
-                        </div>
-                    )}
+                    <button
+                        onClick={() => setScannerOpen(true)}
+                        className="flex-shrink-0 flex items-center px-4 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                        aria-label="Scan item barcode"
+                    >
+                        <QrCodeIcon className="w-5 h-5" />
+                    </button>
                 </div>
-                <div className="flex items-center space-x-4">
-                    <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="shadow-sm rounded-md">
-                        <option value="All">All Statuses</option>
-                        <option value="In Stock">In Stock</option>
-                        <option value="Low Stock">Low Stock</option>
-                        <option value="Out of Stock">Out of Stock</option>
-                    </select>
-                     <select value={expiryFilter} onChange={e => setExpiryFilter(e.target.value)} className="shadow-sm rounded-md">
-                        <option value="All">All Expiry Statuses</option>
-                        <option value="Expiring Soon">Expiring Soon</option>
-                        <option value="Expired">Expired</option>
-                    </select>
-                    <div className="text-right pl-4 border-l dark:border-gray-600">
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                            Total stock in '{categoryFilter}'
-                        </p>
-                        <p className="text-xl font-bold text-indigo-600 dark:text-indigo-400">
-                            {totalStockForCategory.toLocaleString()} units
-                        </p>
-                    </div>
+                <div className="flex flex-col md:flex-row items-center gap-4">
+                     <Dropdown options={categoryOptions} value={categoryFilter} onChange={setCategoryFilter} />
+                     <Dropdown options={statusOptions} value={statusFilter} onChange={setStatusFilter} />
+                     <Dropdown options={expiryOptions} value={expiryFilter} onChange={setExpiryFilter} wrapperClassName="md:w-60" />
                 </div>
             </div>
-
+            
+            {/* Bulk actions bar */}
             {selectedProductIds.length > 0 && (
-                <div className="sticky top-4 sm:top-6 z-10 p-3 bg-indigo-100 dark:bg-gray-700 rounded-lg shadow-lg flex flex-col sm:flex-row justify-between items-center gap-4 animate-fadeIn no-print border-l-4 border-indigo-500">
-                    <div className="flex items-center gap-4">
-                        <span className="font-semibold text-indigo-800 dark:text-indigo-200">{selectedProductIds.length} item(s) selected</span>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                        <button onClick={() => setStatusUpdateOpen(true)} className="px-4 py-2 text-sm font-medium text-indigo-700 bg-white rounded-md hover:bg-indigo-50 dark:bg-gray-800 dark:text-indigo-300 dark:hover:bg-gray-600 shadow-sm border border-indigo-200 dark:border-gray-600 transition-colors">Update Status</button>
-                        <button onClick={() => setDeleteConfirmOpen(true)} className="px-4 py-2 text-sm font-medium text-red-700 bg-white rounded-md hover:bg-red-50 dark:bg-gray-800 dark:text-red-300 dark:hover:bg-gray-600 shadow-sm border border-red-200 dark:border-gray-600 transition-colors">Delete Selected</button>
-                        <button 
-                            onClick={() => setSelectedProductIds([])} 
-                            className="p-2 text-gray-600 bg-white rounded-full hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-600 shadow-sm border border-gray-200 dark:border-gray-600 transition-colors"
-                            aria-label="Clear selection"
-                            title="Clear selection"
-                        >
-                            <CloseIcon className="h-5 w-5" />
-                        </button>
+                 <div className="p-3 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg flex items-center justify-between no-print animate-fadeIn">
+                    <span className="text-sm font-medium text-indigo-800 dark:text-indigo-200">{selectedProductIds.length} item(s) selected</span>
+                    <div className="space-x-2">
+                        <button onClick={() => setStatusUpdateOpen(true)} className="px-3 py-1.5 text-sm font-medium text-indigo-700 bg-white rounded-md shadow-sm hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">Update Status</button>
+                        <button onClick={() => setDeleteConfirmOpen(true)} className="px-3 py-1.5 text-sm font-medium text-red-700 bg-red-100 rounded-md shadow-sm hover:bg-red-200 dark:bg-red-900/50 dark:text-red-300 dark:hover:bg-red-900">Delete</button>
                     </div>
                 </div>
             )}
@@ -763,85 +746,51 @@ const InventoryPage: React.FC = () => {
                 columns={columns}
                 data={filteredProducts}
                 renderActions={renderActions}
-                rowClassName={getRowClassName}
-                selection={currentUser?.roles.includes('Admin') ? {
+                onViewDetails={handleEditProduct}
+                selection={{
                     selectedIds: selectedProductIds,
                     onToggleAll: handleToggleAll,
                     onToggleRow: handleToggleRow,
-                    allSelected: selectedProductIds.length === filteredProducts.length && filteredProducts.length > 0,
-                } : undefined}
-                onViewDetails={currentUser?.roles.includes('Admin') ? handleEditProduct : undefined}
+                    allSelected: selectedProductIds.length > 0 && selectedProductIds.length === filteredProducts.length
+                }}
+                rowClassName={getRowClassName}
             />
 
+            {/* Modals */}
+            <AddEditProductModal isOpen={isAddEditModalOpen} onClose={() => setAddEditModalOpen(false)} product={selectedProduct} />
+            <UpdateStockModal isOpen={isUpdateStockModalOpen} onClose={() => setUpdateStockModalOpen(false)} product={selectedProduct} initialAction={initialStockAction} />
             <Modal isOpen={isScannerOpen} onClose={() => setScannerOpen(false)} title="Scan Barcode">
                 <BarcodeScanner />
             </Modal>
-
-            <AddEditProductModal isOpen={isAddEditModalOpen} onClose={() => setAddEditModalOpen(false)} product={selectedProduct} />
-            
-            <UpdateStockModal isOpen={isUpdateStockModalOpen} onClose={() => setUpdateStockModalOpen(false)} product={selectedProduct} />
-
-            {/* Bulk Delete Confirmation Modal */}
-            <Modal isOpen={isDeleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} title="Confirm Bulk Deletion">
-                <div className="space-y-6">
-                    <p className="text-gray-600 dark:text-gray-300">
-                        Are you sure you want to delete the selected {selectedProductIds.length} products? This action cannot be undone.
-                    </p>
-                    <div className="flex justify-end pt-4 space-x-2 border-t dark:border-gray-700">
-                        <button type="button" onClick={() => setDeleteConfirmOpen(false)} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500">
-                            Cancel
-                        </button>
-                        <button type="button" onClick={handleConfirmDelete} className="px-4 py-2 text-white rounded-lg bg-red-600 hover:bg-red-700">
-                            Delete Products
+            <Modal isOpen={isDeleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} title="Confirm Deletion">
+                <div>
+                    <p>Are you sure you want to delete {selectedProductIds.length} product(s)? This action cannot be undone.</p>
+                    <div className="flex justify-end pt-4 space-x-2 mt-4">
+                        <button onClick={() => setDeleteConfirmOpen(false)} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">Cancel</button>
+                        <button onClick={handleConfirmDelete} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Delete</button>
+                    </div>
+                </div>
+            </Modal>
+            <Modal isOpen={isStatusUpdateOpen} onClose={() => setStatusUpdateOpen(false)} title="Update Status">
+                <div>
+                    <p>Update status for {selectedProductIds.length} selected product(s):</p>
+                    <select value={newStatus} onChange={(e) => setNewStatus(e.target.value as Product['status'])} className="mt-2 w-full">
+                         <option value="In Stock">In Stock</option>
+                         <option value="Low Stock">Low Stock</option>
+                         <option value="Out of Stock">Out of Stock</option>
+                    </select>
+                     <div className="flex justify-end pt-4 space-x-2 mt-4">
+                        <button onClick={() => setStatusUpdateOpen(false)} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">Cancel</button>
+                        <button onClick={handleConfirmStatusUpdate} disabled={isUpdatingStatus} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-indigo-400">
+                           {isUpdatingStatus ? 'Updating...' : 'Update Status'}
                         </button>
                     </div>
                 </div>
             </Modal>
-
-            {/* Bulk Status Update Modal */}
-            <Modal isOpen={isStatusUpdateOpen} onClose={() => setStatusUpdateOpen(false)} title="Bulk Update Status">
-                <div className="space-y-6">
-                    <p className="text-gray-600 dark:text-gray-300">
-                        Are you sure you want to update the status for <strong className="text-gray-800 dark:text-white">{selectedProductIds.length}</strong> selected products to <strong className="text-gray-800 dark:text-white">"{newStatus}"</strong>?
-                    </p>
-                    <div>
-                        <label htmlFor="bulk-status" className="block text-sm font-medium text-gray-700 dark:text-gray-300">New Status</label>
-                        <select
-                            id="bulk-status"
-                            value={newStatus}
-                            onChange={(e) => setNewStatus(e.target.value as Product['status'])}
-                            className="mt-1 block w-full shadow-sm rounded-md"
-                        >
-                            <option value="In Stock">In Stock</option>
-                            <option value="Low Stock">Low Stock</option>
-                            <option value="Out of Stock">Out of Stock</option>
-                        </select>
-                    </div>
-                    <div className="flex justify-end pt-4 space-x-2 border-t dark:border-gray-700">
-                        <button type="button" onClick={() => setStatusUpdateOpen(false)} disabled={isUpdatingStatus} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500 disabled:opacity-50">
-                            Cancel
-                        </button>
-                        <button
-                            type="button"
-                            onClick={handleConfirmStatusUpdate}
-                            disabled={isUpdatingStatus}
-                            className="px-4 py-2 text-white rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-wait flex items-center justify-center min-w-[120px]"
-                        >
-                            {isUpdatingStatus ? (
-                                <>
-                                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                    Updating...
-                                </>
-                            ) : (
-                                'Update Status'
-                            )}
-                        </button>
-                    </div>
-                </div>
-            </Modal>
+            <div id="print-header" className="hidden print-block">
+                <h1 className="text-2xl font-bold">Inventory Report</h1>
+                <p>Generated on: {new Date().toLocaleDateString()}</p>
+            </div>
         </div>
     );
 };

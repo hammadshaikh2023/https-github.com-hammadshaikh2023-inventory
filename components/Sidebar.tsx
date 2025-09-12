@@ -1,6 +1,7 @@
 
 
 
+
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { DashboardIcon, InventoryIcon, SalesIcon, PurchasesIcon, WarehouseIcon, FulfillmentIcon, ReportsIcon, SettingsIcon, AuditIcon, CloseIcon, BellIcon } from './IconComponents';
@@ -23,9 +24,6 @@ const allNavItems = [
     { to: '/notifications', icon: <BellIcon />, label: 'Notifications', roles: ['Admin', 'User', 'Inventory Manager', 'Sales Representative', 'Warehouse Staff', 'Logistics'] },
     { to: '/settings', icon: <SettingsIcon />, label: 'Settings', roles: ['Admin', 'User', 'Inventory Manager', 'Sales Representative', 'Warehouse Staff', 'Logistics'] },
 ];
-
-// Logo from the public folder.
-const logoSrc = "./mainlogo.png";
 
 // FIX: The Sidebar component implementation was missing, causing an import error.
 // It has been added below, along with a default export.
@@ -59,6 +57,18 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
             ))}
         </nav>
     );
+    
+    const companyLink = (
+        <div className="flex-shrink-0 flex p-4 border-t border-gray-200 dark:border-gray-700">
+            <a href="https://www.bigwallsolutions.com" target="_blank" rel="noopener noreferrer" className="flex-shrink-0 w-full group block">
+                <div className="text-center">
+                    <p className="text-sm font-medium text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-gray-200">
+                        Big Wall Solutions
+                    </p>
+                </div>
+            </a>
+        </div>
+    );
 
     return (
         <>
@@ -75,10 +85,14 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
                     </div>
                     <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
                         <div className="flex-shrink-0 flex items-center px-4">
-                            <img className="h-8 w-auto" src={logoSrc} alt="BWS Inventory" />
+                             <div className="h-8 w-auto flex items-center text-xl font-bold" aria-label="BWS Inventory">
+                                <span style={{ color: '#EF7722' }}>BWS</span>
+                                <span style={{ color: '#37353E' }} className="dark:text-gray-200"> Inventory</span>
+                            </div>
                         </div>
                         {navigationLinks(true)}
                     </div>
+                    {companyLink}
                 </div>
             </div>
 
@@ -88,10 +102,14 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
                     <div className="flex flex-col h-0 flex-1 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
                         <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
                              <div className="flex items-center flex-shrink-0 px-4">
-                                <img className="h-10 w-auto" src={logoSrc} alt="BWS Inventory" />
+                                <div className="h-10 w-auto flex items-center text-2xl font-bold" aria-label="BWS Inventory">
+                                    <span style={{ color: '#EF7722' }}>BWS</span>
+                                    <span style={{ color: '#37353E' }} className="dark:text-gray-200"> Inventory</span>
+                                </div>
                             </div>
                             {navigationLinks(false)}
                         </div>
+                        {companyLink}
                     </div>
                 </div>
             </div>

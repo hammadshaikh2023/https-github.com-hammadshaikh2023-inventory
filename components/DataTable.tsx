@@ -59,10 +59,27 @@ const DataTable = <T extends { id: string },>(
                 if (isBNull) return -1; // nulls/undefined go to the end
                 
                 let comparison = 0;
-                if (valA < valB) {
-                    comparison = -1;
-                } else if (valA > valB) {
-                    comparison = 1;
+                // Enhanced type-aware sorting
+                if (typeof valA === 'number' && typeof valB === 'number') {
+                    comparison = valA - valB;
+                } else if (typeof valA === 'string' && typeof valB === 'string') {
+                    // Check if both strings match a date format (YYYY-MM-DD) to sort chronologically.
+                    // This prevents misinterpreting numeric strings (like SKUs) as dates.
+                    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+                    if (dateRegex.test(valA) && dateRegex.test(valB)) {
+                        comparison = new Date(valA).getTime() - new Date(valB).getTime();
+                    } else {
+                        // For all other strings, use localeCompare for smart alphanumeric sorting.
+                        // This correctly handles numbers within strings (e.g., 'SKU-10' vs 'SKU-9').
+                        comparison = valA.localeCompare(valB, undefined, { numeric: true, sensitivity: 'base' });
+                    }
+                } else {
+                    // Fallback for other types or mixed types
+                    if (valA < valB) {
+                        comparison = -1;
+                    } else if (valA > valB) {
+                        comparison = 1;
+                    }
                 }
 
                 return sortConfig.direction === 'ascending' ? comparison : -comparison;
@@ -163,9 +180,8 @@ const DataTable = <T extends { id: string },>(
                                                 {onViewDetails && (
                                                     <button
                                                         onClick={() => onViewDetails(item)}
-                                                        className="text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                                                        title="View Details"
-                                                        aria-label={`View details for item ${item.id}`}
+                                                        className="text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors"
+                                                        title="Edit details"
                                                     >
                                                         <EyeIcon className="w-5 h-5" />
                                                     </button>
@@ -175,45 +191,61 @@ const DataTable = <T extends { id: string },>(
                                         </td>
                                     )}
                                 </tr>
-                                );
-                            })
+                            )})
                         ) : (
-                             <tr>
-                                <td 
-                                    colSpan={columns.length + ((renderActions || onViewDetails) ? 1 : 0) + (selection ? 1 : 0)} 
-                                    className="px-6 py-10 text-center text-gray-500 dark:text-gray-400"
-                                >
-                                    No data available.
+                            <tr>
+                                <td colSpan={columns.length + (selection ? 1 : 0) + (renderActions || onViewDetails ? 1 : 0)} className="text-center py-10 text-gray-500 dark:text-gray-400">
+                                    No data available
                                 </td>
                             </tr>
                         )}
                     </tbody>
                 </table>
             </div>
-
-            {totalPages > 1 && (
-                 <div className="px-6 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 no-print">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                        Page {currentPage} of {totalPages}
-                    </span>
-                    <div className="flex items-center space-x-2">
-                        <button 
-                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                            disabled={currentPage === 1}
-                            className="px-3 py-1 text-sm font-medium text-gray-600 bg-white dark:bg-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            Previous
-                        </button>
-                        <button 
-                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                            disabled={currentPage === totalPages}
-                            className="px-3 py-1 text-sm font-medium text-gray-600 bg-white dark:bg-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            Next
-                        </button>
+             <div className="px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 sm:px-6">
+                <div className="flex-1 flex justify-between sm:hidden">
+                    <button
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                    >
+                        Previous
+                    </button>
+                    <button
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                        className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                    >
+                        Next
+                    </button>
+                </div>
+                <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                    <div>
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                            Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-medium">{Math.min(currentPage * itemsPerPage, data.length)}</span> of{' '}
+                            <span className="font-medium">{data.length}</span> results
+                        </p>
+                    </div>
+                    <div>
+                        <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                disabled={currentPage === 1}
+                                className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                            >
+                                Previous
+                            </button>
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                disabled={currentPage === totalPages || totalPages === 0}
+                                className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                            >
+                                Next
+                            </button>
+                        </nav>
                     </div>
                 </div>
-            )}
+            </div>
         </div>
     );
 };
