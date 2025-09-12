@@ -74,13 +74,13 @@ export const CreateSalesOrderModal: React.FC<{
         } else if (field === 'quantity') {
             const numValue = Number(value);
             if (value !== '' && (!Number.isInteger(numValue) || numValue <= 0)) {
-                setItemErrors(prev => ({...prev, [index]: 'Must be a positive number.'}));
+                setItemErrors(prev => ({...prev, [index]: 'Must be a positive integer.'}));
             } else {
                 const newErrors = {...itemErrors};
                 delete newErrors[index];
                 setItemErrors(newErrors);
             }
-            currentItem.quantity = value === '' ? undefined : parseInt(value, 10);
+            currentItem.quantity = value === '' ? undefined : Number(value);
 
         } else if (field === 'price') {
             currentItem.price = parseFloat(value) || 0;
@@ -105,8 +105,9 @@ export const CreateSalesOrderModal: React.FC<{
         let hasErrors = false;
         const newErrors: Record<number, string | null> = {};
         items.forEach((item, index) => {
-            if (item.productId && (!item.quantity || item.quantity <= 0)) {
-                newErrors[index] = 'Must be a positive number.';
+            const qty = item.quantity;
+            if (item.productId && (qty === undefined || qty === null || !Number.isInteger(qty) || qty <= 0)) {
+                newErrors[index] = 'Must be a positive integer.';
                 hasErrors = true;
             }
         });
@@ -119,7 +120,7 @@ export const CreateSalesOrderModal: React.FC<{
 
         const finalItems = items
             .filter(i => i.productId && i.quantity && typeof i.price !== 'undefined')
-            .map(i => i as OrderItem);
+            .map(i => ({...i, quantity: Number(i.quantity) }) as OrderItem);
 
         if (finalItems.length === 0) {
             alert("Please add at least one valid item to the order.");

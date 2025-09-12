@@ -18,9 +18,15 @@ const SettingsPage: React.FC = () => {
         { id: 'security', label: 'Security', component: <SecuritySettings /> },
     ];
 
-    const availableTabs = currentUser?.roles.includes('Admin')
-        ? allTabs
-        : allTabs.filter(tab => tab.id === 'profile' || tab.id === 'general');
+    const adminOnlyTabs = ['users', 'database', 'security'];
+    const availableTabs = allTabs.filter(tab => {
+        // If the tab is an admin-only tab, check if the user is an admin.
+        if (adminOnlyTabs.includes(tab.id)) {
+            return currentUser?.roles.includes('Admin') ?? false;
+        }
+        // Otherwise, the tab is available to everyone.
+        return true;
+    });
         
     const [activeTab, setActiveTab] = useState(availableTabs[0].id);
 

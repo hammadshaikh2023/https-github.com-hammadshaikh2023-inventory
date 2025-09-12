@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useState, useMemo, useEffect } from 'react';
 import DataTable from '../components/DataTable';
@@ -22,6 +23,7 @@ export const AddEditProductModal: React.FC<{
     const { defaultCurrency } = useSettings();
     const [formData, setFormData] = useState<Partial<Product>>({});
     const [showHistory, setShowHistory] = useState(false);
+    const [errors, setErrors] = useState<{ expires?: string; stock?: string }>({});
 
     useEffect(() => {
         if (product) {
@@ -36,14 +38,33 @@ export const AddEditProductModal: React.FC<{
             });
         }
         setShowHistory(false); // Reset history view on modal open/product change
+        setErrors({});
     }, [product, isOpen, defaultCurrency]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-        if (name === 'stock' || name === 'price' || name === 'unitCost') {
+        if (name === 'expires') {
+            setErrors(prev => ({ ...prev, expires: undefined }));
+        }
+
+        // FIX: Argument of type '(prev: Partial<Product>) => { stock: string; ... }' is not assignable to parameter of type 'SetStateAction<Partial<Product>>'.
+        if (name === 'stock') {
+            const numValue = Number(value);
+            if (value !== '' && (!Number.isInteger(numValue) || numValue < 0)) {
+                setErrors(prev => ({ ...prev, stock: 'Quantity must be a positive integer.' }));
+            } else {
+                setErrors(prev => ({ ...prev, stock: undefined }));
+            }
+            // Correctly handle stock quantity updates. The value from an input is a string,
+            // but the state for 'stock' must be a number. This converts the value, handles empty strings
+            // by setting `undefined` (to clear the input), and avoids setting `NaN` on invalid input.
+            if (value === '') {
+                setFormData(prev => ({ ...prev, stock: undefined }));
+            } else if (!isNaN(numValue)) {
+                setFormData(prev => ({ ...prev, stock: numValue }));
+            }
+        } else if (name === 'price' || name === 'unitCost') {
             const numericValue = parseFloat(value);
-            // Ensure value is a non-negative number.
-            // If the input value is empty, invalid, or negative, it will be treated as 0.
             setFormData(prev => ({ ...prev, [name]: isNaN(numericValue) || numericValue < 0 ? 0 : numericValue }));
         } else {
             setFormData(prev => ({ ...prev, [name]: value }));
@@ -71,15 +92,42 @@ export const AddEditProductModal: React.FC<{
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        
+        // Re-validate stock on submit
+        const stockValue = formData.stock;
+        const stockNum = Number(stockValue);
+        // FIX: The `stockValue` is of type `number | undefined`, so it can never be an empty string `''`.
+        // This comparison was causing a type error and has been removed.
+        if (stockValue === undefined || stockValue === null || !Number.isInteger(stockNum) || stockNum < 0) {
+            setErrors(prev => ({ ...prev, stock: 'Quantity must be a positive integer.' }));
+            return;
+        }
+        
+        if (formData.expires) {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = (today.getMonth() + 1).toString().padStart(2, '0');
+            const day = today.getDate().toString().padStart(2, '0');
+            const todayStr = `${year}-${month}-${day}`;
+
+            if (formData.expires < todayStr) {
+                setErrors({ expires: 'Expiration date cannot be in the past.' });
+                return;
+            }
+        }
+        
+        const finalData = { ...formData, stock: stockNum };
+
         if (product) {
-            updateProduct(formData as Product);
+            updateProduct(finalData as Product);
         } else {
-            addProduct(formData as Omit<Product, 'id'>);
+            addProduct(finalData as Omit<Product, 'id'>);
         }
         onClose();
     }
     
     const handleStockChange = (delta: number) => {
+        setErrors(prev => ({ ...prev, stock: undefined }));
         setFormData(prev => {
             const currentStock = Number(prev.stock) || 0;
             const newStock = Math.max(0, currentStock + delta); // Prevent negative stock
@@ -142,10 +190,11 @@ export const AddEditProductModal: React.FC<{
                                 <input
                                     type="number"
                                     name="stock"
-                                    value={formData.stock || ''}
+                                    value={formData.stock ?? ''}
                                     onChange={handleChange}
                                     required
                                     min="0"
+                                    step="1"
                                     className="w-full text-center font-medium border-t border-b border-gray-300 dark:border-gray-600 py-3 px-0 focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 rounded-none dark:bg-gray-800"
                                 />
                                 <button
@@ -157,6 +206,7 @@ export const AddEditProductModal: React.FC<{
                                     <PlusIcon className="w-4 h-4 text-gray-600 dark:text-gray-300" />
                                 </button>
                             </div>
+                            {errors.stock && <p className="text-red-500 text-xs mt-1">{errors.stock}</p>}
                         </div>
                          <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Unit of Measure</label>
@@ -222,6 +272,7 @@ export const AddEditProductModal: React.FC<{
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Expiration Date (Optional)</label>
                         <input type="date" name="expires" value={formData.expires || ''} onChange={handleChange} className="mt-1 block w-full shadow-sm rounded-md" />
+                        {errors.expires && <p className="text-red-500 text-xs mt-1">{errors.expires}</p>}
                     </div>
                     <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Product Image</label>
