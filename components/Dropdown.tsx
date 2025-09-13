@@ -56,7 +56,7 @@ const Dropdown: React.FC<DropdownProps> = ({ options, value, onChange, placehold
             <button
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
-                className="relative w-full cursor-default rounded-md bg-white dark:bg-gray-700/80 py-2.5 pl-3 pr-10 text-left text-gray-900 dark:text-gray-200 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-base"
+                className="relative w-full cursor-default rounded-md bg-white dark:bg-gray-700/80 py-3 pl-3 pr-10 text-left text-gray-900 dark:text-gray-200 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-base"
                 aria-haspopup="listbox"
                 aria-expanded={isOpen}
             >

@@ -1,7 +1,7 @@
 // IndexedDB utility functions
 
 const DB_NAME = 'bws-inventory-db';
-const DB_VERSION = 3; // Incremented version to add new stores
+const DB_VERSION = 4; // Incremented version to add new stores
 
 // Store names for cached data
 export const PRODUCTS_STORE_NAME = 'products';
@@ -9,6 +9,9 @@ export const SALES_ORDERS_STORE_NAME = 'salesOrders';
 export const PURCHASE_ORDERS_STORE_NAME = 'purchaseOrders';
 export const USERS_STORE_NAME = 'users';
 export const REMINDERS_STORE_NAME = 'reminders';
+export const GATE_PASS_STORE_NAME = 'gatePasses';
+export const PACKING_SLIPS_STORE_NAME = 'packingSlips';
+export const SHIPPING_LABELS_STORE_NAME = 'shippingLabels';
 const SYNC_STORE_NAME = 'sync-queue';
 
 let db: IDBDatabase;
@@ -35,6 +38,9 @@ export const initDB = (): Promise<boolean> => {
           { name: PURCHASE_ORDERS_STORE_NAME, options: { keyPath: 'id' } },
           { name: USERS_STORE_NAME, options: { keyPath: 'id' } },
           { name: REMINDERS_STORE_NAME, options: { keyPath: 'id' } },
+          { name: GATE_PASS_STORE_NAME, options: { keyPath: 'gatePassId' } },
+          { name: PACKING_SLIPS_STORE_NAME, options: { keyPath: 'packingSlipId' } },
+          { name: SHIPPING_LABELS_STORE_NAME, options: { keyPath: 'shippingLabelId' } },
       ];
       storesToCreate.forEach(storeInfo => {
           if (!dbInstance.objectStoreNames.contains(storeInfo.name)) {

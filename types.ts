@@ -20,6 +20,9 @@ export interface Product {
   history?: HistoryEntry[];
   expires?: string;
   imageUrl?: string;
+  description?: string;
+  reorderLevel?: number;
+  location?: string;
 }
 
 export interface OrderItem {
@@ -105,6 +108,9 @@ export interface GatePass {
     driverIdNumber: string;
     driverLicenseNumber: string;
     vehicleNumber: string;
+    status: 'Issued' | 'Exited';
+    clearedBy?: string;
+    exitTimestamp?: string;
 }
 
 export interface PackingSlip {

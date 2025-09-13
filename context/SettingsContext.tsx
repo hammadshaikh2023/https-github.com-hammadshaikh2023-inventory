@@ -8,7 +8,8 @@ interface SettingsContextType {
     setLowStockThreshold: (threshold: number) => void;
 }
 
-const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
+// FIX: Exported SettingsContext to allow its use in other modules, such as test files.
+export const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [defaultCurrency, setDefaultCurrencyState] = useState<Currency>(() => {

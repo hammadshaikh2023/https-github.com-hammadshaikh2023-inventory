@@ -8,7 +8,10 @@ import {
     SALES_ORDERS_STORE_NAME, 
     PURCHASE_ORDERS_STORE_NAME, 
     USERS_STORE_NAME,
-    REMINDERS_STORE_NAME
+    REMINDERS_STORE_NAME,
+    GATE_PASS_STORE_NAME,
+    PACKING_SLIPS_STORE_NAME,
+    SHIPPING_LABELS_STORE_NAME,
 } from '../utils/idb';
 
 interface DataContextType {
@@ -28,7 +31,8 @@ interface DataContextType {
     addPurchaseOrder: (order: Omit<PurchaseOrder, 'id' | 'total' | 'status' | 'history'>, userName: string) => void;
     addUser: (user: Omit<User, 'id'>) => void;
     updateUser: (user: User) => void;
-    addGatePass: (gatePass: Omit<GatePass, 'gatePassId' | 'issueDate'>) => void;
+    addGatePass: (gatePass: Omit<GatePass, 'gatePassId' | 'issueDate' | 'status'>) => void;
+    updateGatePassStatus: (gatePassId: string, clearedByUser: string) => void;
     addPackingSlip: (packingSlip: { orderId: string }) => void;
     addShippingLabel: (shippingLabel: { orderId: string }) => void;
     addReminder: (reminderData: Omit<Reminder, 'id' | 'status'>) => void;
@@ -83,6 +87,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 const cachedPurchaseOrders = await idb.loadData<PurchaseOrder>(PURCHASE_ORDERS_STORE_NAME);
                 const cachedUsers = await idb.loadData<User>(USERS_STORE_NAME);
                 const cachedReminders = await idb.loadData<Reminder>(REMINDERS_STORE_NAME);
+                const cachedGatePasses = await idb.loadData<GatePass>(GATE_PASS_STORE_NAME);
+                const cachedPackingSlips = await idb.loadData<PackingSlip>(PACKING_SLIPS_STORE_NAME);
+                const cachedShippingLabels = await idb.loadData<ShippingLabel>(SHIPPING_LABELS_STORE_NAME);
 
 
                 if (cachedProducts.length > 0) setProducts(cachedProducts);
@@ -90,6 +97,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 if (cachedPurchaseOrders.length > 0) setPurchaseOrders(cachedPurchaseOrders);
                 if (cachedUsers.length > 0) setUsers(cachedUsers);
                 if (cachedReminders.length > 0) setReminders(cachedReminders);
+                if (cachedGatePasses.length > 0) setGatePasses(cachedGatePasses);
+                if (cachedPackingSlips.length > 0) setPackingSlips(cachedPackingSlips);
+                if (cachedShippingLabels.length > 0) setShippingLabels(cachedShippingLabels);
+
 
                 console.log('Loaded data from IndexedDB cache.');
 
@@ -101,26 +112,23 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     const freshSalesOrders = mockSalesOrders;
                     const freshPurchaseOrders = mockPurchaseOrders;
                     const freshUsers = mockUsers;
-                    const freshReminders: Reminder[] = []; // No mock reminders, user-created only
                     
                     // Update state
                     setProducts(freshProducts);
                     setSalesOrders(freshSalesOrders);
                     setPurchaseOrders(freshPurchaseOrders);
                     setUsers(freshUsers);
-                    // Only overwrite reminders if cache is empty, to persist user-created ones across sessions
-                    if (cachedReminders.length === 0) {
-                        setReminders(freshReminders);
-                    }
+                    // Only overwrite user-generated data if cache is empty
+                    if (cachedReminders.length === 0) setReminders([]);
+                    if (cachedGatePasses.length === 0) setGatePasses([]);
+                    if (cachedPackingSlips.length === 0) setPackingSlips([]);
+                    if (cachedShippingLabels.length === 0) setShippingLabels([]);
                     
                     // Update cache
                     await idb.saveData(PRODUCTS_STORE_NAME, freshProducts);
                     await idb.saveData(SALES_ORDERS_STORE_NAME, freshSalesOrders);
                     await idb.saveData(PURCHASE_ORDERS_STORE_NAME, freshPurchaseOrders);
                     await idb.saveData(USERS_STORE_NAME, freshUsers);
-                    if (cachedReminders.length === 0) {
-                         await idb.saveData(REMINDERS_STORE_NAME, freshReminders);
-                    }
 
 
                     console.log('Updated state and IndexedDB with fresh data.');
@@ -343,14 +351,47 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         performOrQueueUpdate({ type: 'UPDATE_USER', payload: updatedUser });
     };
 
-    const addGatePass = (gatePassData: Omit<GatePass, 'gatePassId' | 'issueDate'>) => {
+    const addGatePass = (gatePassData: Omit<GatePass, 'gatePassId' | 'issueDate' | 'status'>) => {
         const newGatePass: GatePass = {
             ...gatePassData,
             gatePassId: `GP-${String(Date.now()).slice(-4)}`,
             issueDate: new Date().toISOString(),
+            status: 'Issued',
         };
         setGatePasses(prev => [newGatePass, ...prev]);
         performOrQueueUpdate({ type: 'ADD_GATE_PASS', payload: newGatePass });
+    };
+
+    const updateGatePassStatus = (gatePassId: string, clearedByUser: string) => {
+        let gatePassToUpdate: GatePass | undefined;
+        
+        setGatePasses(prev => prev.map(gp => {
+            if (gp.gatePassId === gatePassId) {
+                gatePassToUpdate = {
+                    ...gp,
+                    status: 'Exited',
+                    clearedBy: clearedByUser,
+                    exitTimestamp: new Date().toISOString(),
+                };
+                return gatePassToUpdate;
+            }
+            return gp;
+        }));
+
+        if (gatePassToUpdate) {
+            setSalesOrders(prev => prev.map(order => {
+                if (order.id === gatePassToUpdate!.orderId) {
+                     const newHistoryEntry: HistoryEntry = {
+                        timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+                        action: `Vehicle cleared for exit by security guard ${clearedByUser}.`,
+                        user: clearedByUser
+                    };
+                    return { ...order, history: [newHistoryEntry, ...order.history] };
+                }
+                return order;
+            }));
+            performOrQueueUpdate({ type: 'UPDATE_GATE_PASS_STATUS', payload: { gatePassId, clearedByUser } });
+        }
     };
 
     const addPackingSlip = (packingSlipData: { orderId: string }) => {
@@ -394,7 +435,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
 
     return (
-        <DataContext.Provider value={{ products, salesOrders, purchaseOrders, users, gatePasses, packingSlips, shippingLabels, reminders, addProduct, updateProduct, deleteProducts, updateProductStatus, addSalesOrder, addPurchaseOrder, addUser, updateUser, addGatePass, addPackingSlip, addShippingLabel, addReminder, updateReminderStatus, updateSalesOrderStatus, updatePurchaseOrderStatus, updatePurchaseOrderTrackingNumber, updateProductStock }}>
+        <DataContext.Provider value={{ products, salesOrders, purchaseOrders, users, gatePasses, packingSlips, shippingLabels, reminders, addProduct, updateProduct, deleteProducts, updateProductStatus, addSalesOrder, addPurchaseOrder, addUser, updateUser, addGatePass, addPackingSlip, addShippingLabel, addReminder, updateReminderStatus, updateSalesOrderStatus, updatePurchaseOrderStatus, updatePurchaseOrderTrackingNumber, updateProductStock, updateGatePassStatus }}>
             {children}
         </DataContext.Provider>
     );

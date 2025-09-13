@@ -140,7 +140,7 @@ const GeneralSettings: React.FC = () => {
     );
 };
 
-const availableRoles = ['Admin', 'User', 'Inventory Manager', 'Sales Representative', 'Warehouse Staff', 'Logistics'];
+const availableRoles = ['Admin', 'User', 'Inventory Manager', 'Sales Representative', 'Warehouse Staff', 'Logistics', 'Security Guard'];
 
 const AddEditUserModal: React.FC<{ isOpen: boolean; onClose: () => void; user: User | null }> = ({ isOpen, onClose, user }) => {
     const { addUser, updateUser } = useData();

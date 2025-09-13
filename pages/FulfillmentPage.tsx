@@ -1,10 +1,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import { SalesOrder, GatePass, Reminder, PackingSlip, ShippingLabel } from '../types';
 import { useData } from '../context/DataContext';
+import { useAuth } from '../context/AuthContext';
 import { PrinterIcon, DownloadIcon, ClockIcon } from '../components/IconComponents';
 import { BWS_LOGO_BASE64 } from '../assets/logoBase64';
 
@@ -62,7 +63,7 @@ const PackingSlipModal: React.FC<{
         doc.text(order.customer.shippingAddress, 110, 52);
 
         // Items table
-        (doc as any).autoTable({
+        autoTable(doc, {
             startY: 65,
             head: [['Product Name', 'Quantity', 'Unit']],
             body: order.items.map(item => [item.productName, item.quantity, 'Units']),
@@ -235,8 +236,9 @@ const GatePassModal: React.FC<{
     order: SalesOrder | null;
     mode: 'create' | 'view';
 }> = ({ isOpen, onClose, order, mode }) => {
-    const { gatePasses, addGatePass } = useData();
-    const [formData, setFormData] = useState<Omit<GatePass, 'gatePassId' | 'issueDate' | 'orderId'>>({
+    const { gatePasses, addGatePass, updateGatePassStatus } = useData();
+    const { currentUser } = useAuth();
+    const [formData, setFormData] = useState<Omit<GatePass, 'gatePassId' | 'issueDate' | 'status' | 'orderId'>>({
         driverName: '', driverContact: '', driverIdNumber: '', driverLicenseNumber: '', vehicleNumber: ''
     });
 
@@ -249,8 +251,17 @@ const GatePassModal: React.FC<{
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        // FIX: The `addGatePass` function requires the `orderId`, which comes from the `order` prop.
+        // This combines the `orderId` with the form data to create a complete object for the function call.
         addGatePass({ orderId: order.id, ...formData });
         onClose();
+    };
+
+    const handleApproveExit = () => {
+        if (existingGatePass && currentUser) {
+            updateGatePassStatus(existingGatePass.gatePassId, currentUser.name);
+            onClose();
+        }
     };
     
      const handleEmail = () => {
@@ -262,6 +273,7 @@ GATE PASS - ${existingGatePass.gatePassId}
 Order ID: ${order.id}
 Customer: ${order.customer.name}
 Issue Date: ${new Date(existingGatePass.issueDate).toLocaleString()}
+Status: ${existingGatePass.status}
 -----------------------------------
 DRIVER DETAILS
 Name: ${existingGatePass.driverName}
@@ -295,34 +307,48 @@ This pass authorizes the above vehicle and driver to exit the premises with the 
         doc.text(`Order ID: ${order.id}`, 20, 42);
         doc.text(`Customer: ${order.customer.name}`, 20, 49);
         doc.text(`Date Issued: ${new Date(existingGatePass.issueDate).toLocaleString()}`, 20, 56);
+        doc.text(`Status: ${existingGatePass.status}`, 20, 63);
+
 
         // Driver & Vehicle Info
-        doc.line(20, 65, 190, 65); // separator
+        doc.line(20, 70, 190, 70); // separator
         doc.setFontSize(14);
         doc.setFont('helvetica', 'bold');
-        doc.text("Driver & Vehicle Information", 20, 75);
+        doc.text("Driver & Vehicle Information", 20, 80);
         doc.setFontSize(12);
         doc.setFont('helvetica', 'normal');
-        doc.text(`Driver: ${existingGatePass.driverName} (${existingGatePass.driverContact})`, 25, 85);
-        doc.text(`License No: ${existingGatePass.driverLicenseNumber}`, 25, 92);
-        doc.text(`Vehicle No: ${existingGatePass.vehicleNumber}`, 25, 99);
+        doc.text(`Driver: ${existingGatePass.driverName} (${existingGatePass.driverContact})`, 25, 90);
+        doc.text(`License No: ${existingGatePass.driverLicenseNumber}`, 25, 97);
+        doc.text(`Vehicle No: ${existingGatePass.vehicleNumber}`, 25, 104);
 
         // Items
-        doc.line(20, 110, 190, 110); // separator
+        doc.line(20, 115, 190, 115); // separator
         doc.setFontSize(14);
         doc.setFont('helvetica', 'bold');
-        doc.text("Items for Dispatch", 20, 120);
+        doc.text("Items for Dispatch", 20, 125);
         
         const itemBody = order.items.map(item => [`- ${item.quantity}x ${item.productName}`]);
-        (doc as any).autoTable({
-            startY: 125,
+        autoTable(doc, {
+            startY: 130,
             body: itemBody,
             theme: 'plain',
             styles: { cellPadding: 1, fontSize: 12 },
         });
         
         // Authorization text
-        const finalY = (doc as any).lastAutoTable.finalY || 150;
+        let finalY = (doc as any).lastAutoTable.finalY || 150;
+
+        if (existingGatePass.status === 'Exited') {
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.text("Vehicle Cleared for Exit", 20, finalY + 15);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(10);
+            doc.text(`Cleared by: ${existingGatePass.clearedBy}`, 25, finalY + 22);
+            doc.text(`Exit Time: ${new Date(existingGatePass.exitTimestamp!).toLocaleString()}`, 25, finalY + 28);
+            finalY += 20;
+        }
+
         doc.setFontSize(10);
         doc.text("This pass authorizes the above vehicle and driver to exit the premises with the specified goods.", 20, finalY + 15);
         
@@ -367,11 +393,12 @@ This pass authorizes the above vehicle and driver to exit the premises with the 
     if (mode === 'view' && existingGatePass) {
          return (
              <Modal isOpen={isOpen} onClose={onClose} title={`Gate Pass #${existingGatePass.gatePassId}`}>
-                <div className="printable-content space-y-4 text-gray-800">
+                <div className="printable-content space-y-4 text-gray-800 dark:text-gray-200">
                     <h3 className="text-xl font-bold">Gate Pass: {existingGatePass.gatePassId}</h3>
                     <p><strong>Order ID:</strong> {order.id}</p>
                     <p><strong>Customer:</strong> {order.customer.name}</p>
                     <p><strong>Date Issued:</strong> {new Date(existingGatePass.issueDate).toLocaleString()}</p>
+                    <p><strong>Status:</strong> <span className={`font-bold ${existingGatePass.status === 'Exited' ? 'text-green-600' : 'text-yellow-600'}`}>{existingGatePass.status}</span></p>
                     <div className="border-t pt-4 mt-4">
                         <h4 className="font-semibold">Driver & Vehicle Information</h4>
                         <p><strong>Driver:</strong> {existingGatePass.driverName} ({existingGatePass.driverContact})</p>
@@ -384,6 +411,13 @@ This pass authorizes the above vehicle and driver to exit the premises with the 
                             {order.items.map(item => <li key={item.productId}>{item.quantity}x {item.productName}</li>)}
                         </ul>
                     </div>
+                    {existingGatePass.status === 'Exited' && (
+                        <div className="border-t pt-4 mt-4 bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
+                            <h4 className="font-semibold text-green-800 dark:text-green-300">Vehicle Cleared for Exit</h4>
+                            <p><strong>Cleared by:</strong> {existingGatePass.clearedBy}</p>
+                            <p><strong>Exit Time:</strong> {new Date(existingGatePass.exitTimestamp!).toLocaleString()}</p>
+                        </div>
+                    )}
                 </div>
                  <div className="flex justify-end pt-4 space-x-2 border-t mt-4 no-print">
                     <button onClick={handleEmail} className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">Email</button>
@@ -393,6 +427,9 @@ This pass authorizes the above vehicle and driver to exit the premises with the 
                     <button onClick={() => window.print()} className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
                         <PrinterIcon className="w-5 h-5 mr-2" /> Print
                     </button>
+                    {currentUser?.roles.includes('Security Guard') && existingGatePass.status === 'Issued' && (
+                        <button onClick={handleApproveExit} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Approve Vehicle Exit</button>
+                    )}
                 </div>
              </Modal>
          )
@@ -480,6 +517,7 @@ const SetReminderModal: React.FC<{
 
 const FulfillmentPage: React.FC = () => {
     const { salesOrders, gatePasses, packingSlips, shippingLabels, addPackingSlip, addShippingLabel, reminders } = useData();
+    const { currentUser } = useAuth();
     const [selectedOrder, setSelectedOrder] = useState<SalesOrder | null>(null);
     const [isPackingSlipOpen, setPackingSlipOpen] = useState(false);
     const [isShippingLabelOpen, setShippingLabelOpen] = useState(false);
@@ -489,15 +527,36 @@ const FulfillmentPage: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const debouncedSearchTerm = useDebounce(searchTerm, 300);
     
-    const ordersToFulfill = useMemo(() => {
+    const isSecurityGuard = currentUser?.roles.includes('Security Guard');
+
+    const ordersToDisplay = useMemo(() => {
         return salesOrders
-            .filter(o => o.status === 'Pending')
-            .filter(order => {
+            .filter(o => {
                 const term = debouncedSearchTerm.toLowerCase();
-                return order.id.toLowerCase().includes(term) ||
-                       order.customer.name.toLowerCase().includes(term);
+                const matchesSearch = o.id.toLowerCase().includes(term) || o.customer.name.toLowerCase().includes(term);
+
+                if (!matchesSearch) return false;
+
+                if (isSecurityGuard) {
+                    // Guards see orders with an issued or exited gate pass for review.
+                    return gatePasses.some(gp => gp.orderId === o.id);
+                }
+                // Others see all pending orders for fulfillment processing.
+                return o.status === 'Pending';
+            })
+             .sort((a, b) => {
+                // For guards, sort by gate pass issue date (newest first).
+                if(isSecurityGuard) {
+                    const gatePassA = gatePasses.find(gp => gp.orderId === a.id);
+                    const gatePassB = gatePasses.find(gp => gp.orderId === b.id);
+                    if (gatePassA && gatePassB) {
+                        return new Date(gatePassB.issueDate).getTime() - new Date(gatePassA.issueDate).getTime();
+                    }
+                }
+                // Default sort by order date for others.
+                return new Date(b.date).getTime() - new Date(a.date).getTime();
             });
-    }, [salesOrders, debouncedSearchTerm]);
+    }, [salesOrders, gatePasses, debouncedSearchTerm, isSecurityGuard]);
 
 
     const columns = [
@@ -525,7 +584,7 @@ const FulfillmentPage: React.FC = () => {
         },
         { header: 'Customer', accessor: 'customer' as keyof SalesOrder, sortable: true, render: (item: SalesOrder) => item.customer.name },
         { header: 'Date', accessor: 'date' as keyof SalesOrder, sortable: true },
-        { 
+        ...(!isSecurityGuard ? [{ 
             header: 'Items to Fulfill', 
             accessor: 'items' as keyof SalesOrder,
             render: (item: SalesOrder) => (
@@ -537,7 +596,7 @@ const FulfillmentPage: React.FC = () => {
                     ))}
                 </ul>
             )
-        },
+        }] : []),
         { 
             header: 'Documents', 
             accessor: 'id' as keyof SalesOrder, // Use a key that's available on the item
@@ -559,12 +618,42 @@ const FulfillmentPage: React.FC = () => {
                 );
             }
         },
+        {
+            header: 'Gate Pass Status',
+            accessor: 'id' as keyof SalesOrder,
+            render: (order: SalesOrder) => {
+                const gatePass = gatePasses.find(gp => gp.orderId === order.id);
+                if (!gatePass) return <span className="text-sm text-gray-500">N/A</span>;
+                
+                const statusMap: Record<GatePass['status'], string> = {
+                    'Issued': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300',
+                    'Exited': 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300'
+                };
+                return <span className={`px-2 py-1 text-xs font-semibold rounded-full ${statusMap[gatePass.status]}`}>{gatePass.status}</span>;
+            }
+        }
     ];
     
     const renderActions = (order: SalesOrder) => {
         const hasGatePass = gatePasses.some(gp => gp.orderId === order.id);
         const hasPackingSlip = packingSlips.some(p => p.orderId === order.id);
         const hasShippingLabel = shippingLabels.some(l => l.orderId === order.id);
+
+        if (isSecurityGuard) {
+            return (
+                <button
+                    onClick={() => {
+                        setSelectedOrder(order);
+                        setGatePassMode('view');
+                        setGatePassModalOpen(true);
+                    }}
+                    className="px-3 py-1.5 text-sm bg-indigo-100 text-indigo-700 rounded-md dark:bg-indigo-900/50 dark:text-indigo-300 w-full text-left whitespace-nowrap font-semibold"
+                    disabled={!hasGatePass}
+                >
+                    View / Process Pass
+                </button>
+            )
+        }
 
         const handlePackingSlipClick = () => {
             if (!hasPackingSlip) {
@@ -594,10 +683,10 @@ const FulfillmentPage: React.FC = () => {
                     Set Reminder
                 </button>
                 <button onClick={handlePackingSlipClick} className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-md dark:bg-blue-900/50 dark:text-blue-300 w-full text-left whitespace-nowrap">
-                    {hasPackingSlip ? 'View Packing Slip' : 'Generate Packing Slip'}
+                    {hasPackingSlip ? 'View Slip' : 'Generate Slip'}
                 </button>
                 <button onClick={handleShippingLabelClick} className="px-3 py-1 text-sm bg-green-100 text-green-700 rounded-md dark:bg-green-900/50 dark:text-green-300 w-full text-left whitespace-nowrap">
-                    {hasShippingLabel ? 'View Shipping Label' : 'Generate Shipping Label'}
+                    {hasShippingLabel ? 'View Label' : 'Generate Label'}
                 </button>
                 <button 
                     onClick={() => {
@@ -607,7 +696,7 @@ const FulfillmentPage: React.FC = () => {
                     }}
                     className="px-3 py-1 text-sm bg-indigo-100 text-indigo-700 rounded-md dark:bg-indigo-900/50 dark:text-indigo-300 w-full text-left whitespace-nowrap"
                 >
-                    {hasGatePass ? 'View Gate Pass' : 'Create Gate Pass'}
+                    {hasGatePass ? 'View Pass' : 'Create Pass'}
                 </button>
             </div>
         );
@@ -615,7 +704,14 @@ const FulfillmentPage: React.FC = () => {
 
     return (
         <div className="space-y-6">
-            <h2 className="text-3xl font-bold text-gray-800 dark:text-white">Order Fulfillment</h2>
+            <h2 className="text-3xl font-bold text-gray-800 dark:text-white">
+                {isSecurityGuard ? 'Gate Pass Approvals' : 'Order Fulfillment'}
+            </h2>
+             <p className="text-gray-600 dark:text-gray-400 -mt-4">
+                {isSecurityGuard 
+                    ? 'Review and approve vehicle exits for orders with issued gate passes.'
+                    : 'Manage pending orders, generate documents, and set reminders for fulfillment.'}
+            </p>
 
             <div className="p-4 bg-white dark:bg-gray-800 rounded-xl shadow-lg no-print">
                 <input
@@ -627,7 +723,7 @@ const FulfillmentPage: React.FC = () => {
                 />
             </div>
             
-            <DataTable columns={columns} data={ordersToFulfill} renderActions={renderActions} />
+            <DataTable columns={columns} data={ordersToDisplay} renderActions={renderActions} />
 
             <PackingSlipModal isOpen={isPackingSlipOpen} onClose={() => setPackingSlipOpen(false)} order={selectedOrder} />
             <ShippingLabelModal isOpen={isShippingLabelOpen} onClose={() => setShippingLabelOpen(false)} order={selectedOrder} />

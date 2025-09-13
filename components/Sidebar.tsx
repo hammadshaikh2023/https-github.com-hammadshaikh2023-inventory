@@ -13,16 +13,16 @@ interface SidebarProps {
 }
 
 const allNavItems = [
-    { to: '/', icon: <DashboardIcon />, label: 'Dashboard', roles: ['Admin', 'User', 'Inventory Manager', 'Sales Representative', 'Warehouse Staff', 'Logistics'] },
+    { to: '/', icon: <DashboardIcon />, label: 'Dashboard', roles: ['Admin', 'User', 'Inventory Manager', 'Sales Representative', 'Warehouse Staff', 'Logistics', 'Security Guard'] },
     { to: '/inventory', icon: <InventoryIcon />, label: 'Inventory', roles: ['Admin', 'User', 'Inventory Manager', 'Warehouse Staff'] },
     { to: '/sales', icon: <SalesIcon />, label: 'Sales', roles: ['Admin', 'User', 'Sales Representative'] },
     { to: '/purchases', icon: <PurchasesIcon />, label: 'Purchases', roles: ['Admin', 'User', 'Inventory Manager'] },
     { to: '/warehouses', icon: <WarehouseIcon />, label: 'Warehouses', roles: ['Admin', 'User', 'Warehouse Staff'] },
-    { to: '/fulfillment', icon: <FulfillmentIcon />, label: 'Fulfillment', roles: ['Admin', 'User', 'Logistics'] },
+    { to: '/fulfillment', icon: <FulfillmentIcon />, label: 'Fulfillment', roles: ['Admin', 'User', 'Logistics', 'Security Guard'] },
     { to: '/audit', icon: <AuditIcon />, label: 'Audit', roles: ['Admin'] },
     { to: '/reports', icon: <ReportsIcon />, label: 'Reports & Analytics', roles: ['Admin', 'Inventory Manager'] },
-    { to: '/notifications', icon: <BellIcon />, label: 'Notifications', roles: ['Admin', 'User', 'Inventory Manager', 'Sales Representative', 'Warehouse Staff', 'Logistics'] },
-    { to: '/settings', icon: <SettingsIcon />, label: 'Settings', roles: ['Admin', 'User', 'Inventory Manager', 'Sales Representative', 'Warehouse Staff', 'Logistics'] },
+    { to: '/notifications', icon: <BellIcon />, label: 'Notifications', roles: ['Admin', 'User', 'Inventory Manager', 'Sales Representative', 'Warehouse Staff', 'Logistics', 'Security Guard'] },
+    { to: '/settings', icon: <SettingsIcon />, label: 'Settings', roles: ['Admin', 'User', 'Inventory Manager', 'Sales Representative', 'Warehouse Staff', 'Logistics', 'Security Guard'] },
 ];
 
 // FIX: The Sidebar component implementation was missing, causing an import error.

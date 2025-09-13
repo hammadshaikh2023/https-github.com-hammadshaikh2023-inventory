@@ -1,4 +1,9 @@
 
+
+
+
+
+
 import React from 'react';
 import { useState, useMemo, useEffect } from 'react';
 import DataTable from '../components/DataTable';
@@ -35,13 +40,16 @@ export const AddEditProductModal: React.FC<{
                 status: 'In Stock',
                 currency: defaultCurrency,
                 batchNumber: '', // Start with empty batch number
+                description: '',
+                location: '',
+                reorderLevel: undefined,
             });
         }
         setShowHistory(false); // Reset history view on modal open/product change
         setErrors({});
     }, [product, isOpen, defaultCurrency]);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         if (name === 'expires') {
             setErrors(prev => ({ ...prev, expires: undefined }));
@@ -63,9 +71,13 @@ export const AddEditProductModal: React.FC<{
             } else if (!isNaN(numValue)) {
                 setFormData(prev => ({ ...prev, stock: numValue }));
             }
-        } else if (name === 'price' || name === 'unitCost') {
-            const numericValue = parseFloat(value);
-            setFormData(prev => ({ ...prev, [name]: isNaN(numericValue) || numericValue < 0 ? 0 : numericValue }));
+        } else if (name === 'price' || name === 'unitCost' || name === 'reorderLevel') {
+            if (value === '') {
+                setFormData(prev => ({ ...prev, [name]: undefined }));
+            } else {
+                const numericValue = parseFloat(value);
+                setFormData(prev => ({ ...prev, [name]: isNaN(numericValue) || numericValue < 0 ? 0 : numericValue }));
+            }
         } else {
             setFormData(prev => ({ ...prev, [name]: value }));
         }
@@ -111,7 +123,7 @@ export const AddEditProductModal: React.FC<{
             const todayStr = `${year}-${month}-${day}`;
 
             if (formData.expires < todayStr) {
-                setErrors({ expires: 'Expiration date cannot be in the past.' });
+                setErrors({ expires: 'Expiration date cannot be in the a past.' });
                 return;
             }
         }
@@ -155,6 +167,10 @@ export const AddEditProductModal: React.FC<{
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">SKU</label>
                         <input type="text" name="sku" value={formData.sku || ''} onChange={handleChange} required className="mt-1 block w-full shadow-sm rounded-md" />
                     </div>
+                    <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Product Description</label>
+                        <textarea name="description" value={formData.description || ''} onChange={handleChange} rows={3} placeholder="Enter a detailed description..." className="mt-1 block w-full shadow-sm rounded-md"></textarea>
+                    </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
                         <select name="category" value={formData.category || ''} onChange={handleChange} required className="mt-1 block w-full shadow-sm rounded-md">
@@ -175,7 +191,12 @@ export const AddEditProductModal: React.FC<{
                              <option value="Testing Lab">Testing Lab</option>
                         </select>
                     </div>
-                     <div className="grid grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Location in Warehouse</label>
+                        <input type="text" name="location" value={formData.location || ''} onChange={handleChange} placeholder="e.g., Aisle 5, Rack 3" className="mt-1 block w-full shadow-sm rounded-md" />
+                    </div>
+
+                    <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Stock Quantity</label>
                             <div className="flex items-center mt-1">
@@ -207,6 +228,10 @@ export const AddEditProductModal: React.FC<{
                                 </button>
                             </div>
                             {errors.stock && <p className="text-red-500 text-xs mt-1">{errors.stock}</p>}
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Reorder Level</label>
+                            <input type="number" name="reorderLevel" value={formData.reorderLevel ?? ''} onChange={handleChange} placeholder="e.g., 100" min="0" step="1" className="mt-1 block w-full shadow-sm rounded-md" />
                         </div>
                          <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Unit of Measure</label>
@@ -486,6 +511,7 @@ const InventoryPage: React.FC = () => {
     const [statusFilter, setStatusFilter] = useState('All');
     const [categoryFilter, setCategoryFilter] = useState('All');
     const [expiryFilter, setExpiryFilter] = useState('All');
+    const [supplierFilter, setSupplierFilter] = useState('All');
 
     // Debounce the search term to avoid excessive re-renders on each keystroke
     const debouncedSearchTerm = useDebounce(searchTerm, 300);
@@ -498,32 +524,51 @@ const InventoryPage: React.FC = () => {
             }))
             .filter(p => statusFilter === 'All' || p.status === statusFilter)
             .filter(p => categoryFilter === 'All' || p.category === categoryFilter)
+            .filter(p => supplierFilter === 'All' || p.supplier === supplierFilter)
             .filter(p => {
                 if (expiryFilter === 'All') return true;
                 const expiryStatus = getExpiryStatus(p);
                 if (expiryFilter === 'Expiring Soon') return expiryStatus === 1;
                 if (expiryFilter === 'Expired') return expiryStatus === 0;
-                return true;
+                return false;
             })
             .filter(p => 
                 p.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) || 
                 p.sku.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
                 p.batchNumber.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
             );
-    }, [products, debouncedSearchTerm, statusFilter, categoryFilter, expiryFilter]);
+    }, [products, debouncedSearchTerm, statusFilter, categoryFilter, expiryFilter, supplierFilter]);
     
     const categories = ['All', ...Array.from(new Set(products.map(p => p.category)))];
     const categoryOptions = categories.map(c => ({ value: c, label: c === 'All' ? 'All Categories' : c }));
+    const suppliers = ['All', ...Array.from(new Set(products.map(p => p.supplier)))];
+    const supplierOptions = suppliers.map(s => ({ value: s, label: s === 'All' ? 'All Suppliers' : s }));
+
     const statusOptions = [
         { value: 'All', label: 'All Statuses' },
         { value: 'In Stock', label: 'In Stock' },
         { value: 'Low Stock', label: 'Low Stock' },
         { value: 'Out of Stock', label: 'Out of Stock' }
     ];
+
+    // Calculate counts for expiry filter options
+    const expiryCounts = useMemo(() => {
+        const counts = {
+            expired: 0,
+            expiringSoon: 0,
+        };
+        products.forEach(p => {
+            const status = getExpiryStatus(p);
+            if (status === 0) counts.expired++;
+            if (status === 1) counts.expiringSoon++;
+        });
+        return counts;
+    }, [products]);
+    
     const expiryOptions = [
         { value: 'All', label: 'All Expiry Statuses' },
-        { value: 'Expiring Soon', label: 'Expiring Soon' },
-        { value: 'Expired', label: 'Expired' }
+        { value: 'Expiring Soon', label: `Expiring Soon (${expiryCounts.expiringSoon})` },
+        { value: 'Expired', label: `Expired (${expiryCounts.expired})` }
     ];
 
     const totalStockValue = useMemo(() => {
@@ -683,10 +728,10 @@ const InventoryPage: React.FC = () => {
                 return (qualitySortOrder[a.qualityTestStatus] ?? 99) - (qualitySortOrder[b.qualityTestStatus] ?? 99);
             },
             render: (item: Product) => {
-                const color = item.qualityTestStatus === 'Passed' ? 'text-green-500' 
-                            : item.qualityTestStatus === 'Pending' ? 'text-yellow-500' 
-                            : 'text-red-500';
-                return <span className={`font-medium ${color}`}>{item.qualityTestStatus}</span>;
+                const color = item.qualityTestStatus === 'Passed' ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' 
+                            : item.qualityTestStatus === 'Pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300' 
+                            : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
+                return <span className={`px-2 py-1 text-xs font-semibold rounded-full ${color}`}>{item.qualityTestStatus}</span>;
             }
         },
     ];
@@ -752,33 +797,39 @@ const InventoryPage: React.FC = () => {
             </div>
 
             {/* Filters and Search section */}
-            <div className="p-4 bg-white dark:bg-gray-800 rounded-xl shadow-lg space-y-4 md:space-y-0 md:flex md:items-center md:justify-between no-print">
-                <div className="flex items-center gap-2 flex-grow md:max-w-lg">
-                    <div className="relative flex-grow">
-                        <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                            <SearchIcon className="w-5 h-5 text-gray-400" />
-                        </span>
-                        <input
-                            id="inventory-search"
-                            type="text"
-                            placeholder="Search by Name, Batch # or SKU..."
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                            className="w-full"
-                        />
+            <div className="p-4 bg-white dark:bg-gray-800 rounded-xl shadow-lg no-print">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 items-center">
+                    {/* Search and Scan Group */}
+                    <div className="sm:col-span-2 lg:col-span-2">
+                        <div className="flex items-center gap-2">
+                            <div className="relative flex-grow">
+                                <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                    <SearchIcon className="w-5 h-5 text-gray-400" />
+                                </span>
+                                <input
+                                    id="inventory-search"
+                                    type="text"
+                                    placeholder="Search by Name, Batch # or SKU..."
+                                    value={searchTerm}
+                                    onChange={e => setSearchTerm(e.target.value)}
+                                    className="w-full"
+                                />
+                            </div>
+                            <button
+                                onClick={() => setScannerOpen(true)}
+                                className="flex-shrink-0 flex items-center justify-center px-4 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                                aria-label="Scan item barcode"
+                            >
+                                <QrCodeIcon className="w-5 h-5" />
+                            </button>
+                        </div>
                     </div>
-                    <button
-                        onClick={() => setScannerOpen(true)}
-                        className="flex-shrink-0 flex items-center px-4 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-                        aria-label="Scan item barcode"
-                    >
-                        <QrCodeIcon className="w-5 h-5" />
-                    </button>
-                </div>
-                <div className="flex flex-col md:flex-row items-center gap-4">
-                     <Dropdown options={categoryOptions} value={categoryFilter} onChange={setCategoryFilter} />
-                     <Dropdown options={statusOptions} value={statusFilter} onChange={setStatusFilter} />
-                     <Dropdown options={expiryOptions} value={expiryFilter} onChange={setExpiryFilter} wrapperClassName="md:w-60" />
+
+                    {/* Filters */}
+                    <Dropdown options={categoryOptions} value={categoryFilter} onChange={setCategoryFilter} />
+                    <Dropdown options={statusOptions} value={statusFilter} onChange={setStatusFilter} />
+                    <Dropdown options={expiryOptions} value={expiryFilter} onChange={setExpiryFilter} />
+                    <Dropdown options={supplierOptions} value={supplierFilter} onChange={setSupplierFilter} />
                 </div>
             </div>
             

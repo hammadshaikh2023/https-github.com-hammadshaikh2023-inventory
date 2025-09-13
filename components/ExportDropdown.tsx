@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { ChevronDownIcon, PrinterIcon, PdfIcon, ExcelIcon, WordIcon } from './IconComponents';
 
 interface ExportColumn<T> {
@@ -45,7 +45,7 @@ const ExportDropdown = <T extends {}>({ data, columns, fileName }: ExportDropdow
     
     const handleExportPdf = () => {
         const doc = new jsPDF();
-        (doc as any).autoTable({
+        autoTable(doc, {
             head: [columns.map(c => c.header)],
             body: data.map(row => columns.map(col => {
                 const value = row[col.accessor];
