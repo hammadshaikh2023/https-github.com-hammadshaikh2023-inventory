@@ -235,10 +235,12 @@ const ViewPurchaseOrderModal: React.FC<{
     const [historyDateFrom, setHistoryDateFrom] = useState('');
     const [historyDateTo, setHistoryDateTo] = useState('');
     const [historyUser, setHistoryUser] = useState('All');
+    const [status, setStatus] = useState<PurchaseOrder['status'] | undefined>(undefined);
 
     useEffect(() => {
         if(order) {
             setTrackingInput(order.trackingNumber || '');
+            setStatus(order.status);
         }
         if (isOpen) {
             setHistoryDateFrom('');
@@ -267,10 +269,10 @@ const ViewPurchaseOrderModal: React.FC<{
     if (!order) return null;
 
     const handleStatusChange = (newStatus: PurchaseOrder['status']) => {
-        if (order && currentUser) {
+        if (order && currentUser && newStatus !== order.status) {
             updatePurchaseOrderStatus(order.id, newStatus, currentUser.name);
+            setStatus(newStatus); // update local state to reflect change immediately
         }
-        onClose();
     };
     
     const handleTrackingUpdate = () => {
@@ -358,11 +360,22 @@ const ViewPurchaseOrderModal: React.FC<{
                     </ul>
                 </div>
                 <div className="flex justify-between items-center pt-4 border-t dark:border-gray-700">
-                    <p className="font-semibold text-gray-800 dark:text-white">Total: {order.currency} {order.total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
-                    { currentUser?.roles.includes('Admin') && order.status === 'Pending' && (
-                        <div className="flex space-x-2">
-                            <button onClick={() => handleStatusChange('Cancelled')} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Cancel Order</button>
-                            <button onClick={() => handleStatusChange('Received')} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Mark as Received</button>
+                    <div>
+                        <p className="font-semibold text-gray-800 dark:text-white">Total: {order.currency} {order.total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                    </div>
+                    {currentUser?.roles.includes('Admin') && (
+                        <div className="flex items-center space-x-2">
+                            <label htmlFor="status-select" className="text-sm font-medium text-gray-700 dark:text-gray-300">Change Status:</label>
+                            <select
+                                id="status-select"
+                                value={status}
+                                onChange={(e) => handleStatusChange(e.target.value as PurchaseOrder['status'])}
+                                className="text-sm rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600"
+                            >
+                                <option value="Pending">Pending</option>
+                                <option value="Received">Received</option>
+                                <option value="Cancelled">Cancelled</option>
+                            </select>
                         </div>
                     )}
                 </div>

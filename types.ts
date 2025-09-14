@@ -4,7 +4,7 @@ export interface Product {
   id: string;
   name: string;
   sku: string;
-  category: 'Aggregates' | 'Binders' | 'Additives' | 'Lab Supplies';
+  category: string;
   stock: number;
   unitOfMeasure: 'Ton' | 'Cubic Meter' | 'Bag' | 'Drum';
   price: number;

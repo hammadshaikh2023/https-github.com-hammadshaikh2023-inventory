@@ -1,15 +1,9 @@
-import React, { useState, useMemo } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import React, { useMemo } from 'react';
+import { AreaChart, Area, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useData } from '../context/DataContext';
+import { useAuth } from '../context/AuthContext';
 import { mockRecentActivity, mockSalesDataForChart } from '../data/mockData';
-import { InventoryIcon, SalesIcon, PurchasesIcon, PlusIcon, QrCodeIcon, ClockIcon } from '../components/IconComponents';
-
-// Import Modals from other pages
-import { AddEditProductModal } from './InventoryPage';
-import { CreateSalesOrderModal } from './SalesPage';
-import { CreatePurchaseOrderModal } from './PurchasesPage';
-import Modal from '../components/Modal';
-import BarcodeScanner from '../components/BarcodeScanner';
+import { InventoryIcon, SalesIcon, PurchasesIcon, ClockIcon } from '../components/IconComponents';
 
 const StatCard: React.FC<{ title: string; value: string; icon: React.ReactNode; change?: string; changeType?: 'increase' | 'decrease' }> = ({ title, value, icon, change, changeType }) => (
     <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg flex items-center space-x-4 transition-transform hover:scale-105 duration-300">
@@ -26,18 +20,6 @@ const StatCard: React.FC<{ title: string; value: string; icon: React.ReactNode; 
             )}
         </div>
     </div>
-);
-
-const QuickActionButton: React.FC<{ label: string, icon: React.ReactNode, onClick: () => void }> = ({ label, icon, onClick }) => (
-    <button
-        onClick={onClick}
-        className="flex flex-col items-center justify-center space-y-2 p-4 bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl hover:bg-indigo-50 dark:hover:bg-gray-700 transition-all duration-300 transform hover:-translate-y-1"
-    >
-        <div className="bg-indigo-100 dark:bg-indigo-900/50 p-3 rounded-full">
-            {icon}
-        </div>
-        <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">{label}</span>
-    </button>
 );
 
 const UpcomingReminders: React.FC = () => {
@@ -91,151 +73,103 @@ const UpcomingReminders: React.FC = () => {
     )
 }
 
+const AdminDashboard: React.FC = () => {
+    const { products, salesOrders } = useData();
 
-const DashboardPage: React.FC = () => {
-    const { products, salesOrders, purchaseOrders } = useData();
-    
-    const [isAddProductModalOpen, setAddProductModalOpen] = useState(false);
-    const [isSalesModalOpen, setSalesModalOpen] = useState(false);
-    const [isPurchaseModalOpen, setPurchaseModalOpen] = useState(false);
-    const [isScannerOpen, setScannerOpen] = useState(false);
-
-    const totalStock = products.reduce((sum, p) => sum + p.stock, 0);
-    const lowStockItems = products.filter(p => p.status === 'Low Stock');
-    const outOfStockItems = products.filter(p => p.status === 'Out of Stock');
-    const totalRevenueByCurrency = salesOrders
+    const totalRevenue = salesOrders
         .filter(o => o.status === 'Fulfilled')
-        .reduce((acc, o) => {
-            acc[o.currency] = (acc[o.currency] || 0) + o.total;
+        .reduce((sum, o) => sum + o.total, 0);
+
+    const avgOrderValue = salesOrders.length > 0 ? totalRevenue / salesOrders.length : 0;
+    const pendingOrdersCount = salesOrders.filter(o => o.status === 'Pending').length;
+    const outOfStockCount = products.filter(p => p.status === 'Out of Stock').length;
+    
+    const orderStatusData = useMemo(() => {
+        const statusCounts = salesOrders.reduce((acc, order) => {
+            acc[order.status] = (acc[order.status] || 0) + 1;
             return acc;
         }, {} as Record<string, number>);
-
-    const revenueString = Object.entries(totalRevenueByCurrency)
-        .map(([currency, total]) => `${currency} ${(total / 1000).toFixed(1)}k`)
-        .join(' | ');
-
-    const topSellingProducts = useMemo(() => {
-        const productSales = new Map<string, number>();
-        salesOrders.forEach(order => {
-            if (order.status === 'Fulfilled') {
-                order.items.forEach(item => {
-                    productSales.set(item.productId, (productSales.get(item.productId) || 0) + item.quantity);
-                });
-            }
-        });
-
-        return Array.from(productSales.entries())
-            .sort(([, a], [, b]) => b - a)
-            .slice(0, 5)
-            .map(([productId, quantitySold]) => ({
-                product: products.find(p => p.id === productId),
-                quantitySold,
-            }));
-    }, [salesOrders, products]);
-
+        return Object.entries(statusCounts).map(([name, value]) => ({ name, value }));
+    }, [salesOrders]);
+    
+    const COLORS = { 'Fulfilled': '#34d399', 'Pending': '#f59e0b', 'Cancelled': '#ef4444' };
 
     const CustomTooltip = ({ active, payload, label }: any) => {
         if (active && payload && payload.length) {
           return (
             <div className="p-4 bg-gray-900/80 text-white rounded-lg shadow-lg">
-              <p className="label font-bold">{`${label}`}</p>
-              <p className="intro text-indigo-300">{`Sales: $${payload[0].value.toLocaleString()}`}</p>
-              <p className="intro text-green-300">{`Profit: $${payload[1].value.toLocaleString()}`}</p>
+              <p className="label font-bold">{`${label || payload[0].name}`}</p>
+              {payload.map((entry: any, index: number) => (
+                  <p key={`item-${index}`} style={{ color: entry.color || entry.stroke }}>
+                      {`${entry.name}: ${entry.value.toLocaleString(undefined, {style: entry.dataKey === 'profit' || entry.dataKey === 'sales' ? 'currency' : 'decimal', currency: 'USD'})}`}
+                  </p>
+              ))}
             </div>
           );
         }
         return null;
-      };
-
+    };
+    
     return (
         <div className="space-y-8">
-            <h2 className="text-3xl font-bold text-gray-800 dark:text-white">Dashboard</h2>
-
-            {/* Quick Actions */}
-            <div>
-                <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-4">Quick Actions</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <QuickActionButton label="New Sales Order" icon={<PlusIcon className="w-6 h-6 text-indigo-500" />} onClick={() => setSalesModalOpen(true)} />
-                    <QuickActionButton label="New Purchase Order" icon={<PlusIcon className="w-6 h-6 text-indigo-500" />} onClick={() => setPurchaseModalOpen(true)} />
-                    <QuickActionButton label="Add New Product" icon={<PlusIcon className="w-6 h-6 text-indigo-500" />} onClick={() => setAddProductModalOpen(true)} />
-                    <QuickActionButton label="Scan Item" icon={<QrCodeIcon className="w-6 h-6 text-indigo-500" />} onClick={() => setScannerOpen(true)} />
-                </div>
-            </div>
-
+            <h2 className="text-3xl font-bold text-gray-800 dark:text-white">Admin Dashboard</h2>
             {/* Stat Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard title="Total Revenue" value={revenueString || '$0.0k'} icon={<SalesIcon className="w-6 h-6 text-indigo-500" />} change="+12.5% this month" changeType="increase"/>
-                <StatCard title="Total Stock Units" value={totalStock.toLocaleString()} icon={<InventoryIcon className="w-6 h-6 text-indigo-500" />} change="-1.2% this month" changeType="decrease" />
-                <StatCard title="Pending Sales" value={String(salesOrders.filter(o => o.status === 'Pending').length)} icon={<SalesIcon className="w-6 h-6 text-indigo-500" />} />
-                <StatCard title="Pending Purchases" value={String(purchaseOrders.filter(o => o.status === 'Pending').length)} icon={<PurchasesIcon className="w-6 h-6 text-indigo-500" />} />
+                <StatCard title="Total Revenue" value={`$${(totalRevenue / 1000).toFixed(1)}k`} icon={<SalesIcon className="w-6 h-6 text-indigo-500" />} change="+12.5% this month" changeType="increase"/>
+                <StatCard title="Avg. Order Value" value={`$${avgOrderValue.toFixed(2)}`} icon={<SalesIcon className="w-6 h-6 text-indigo-500" />} />
+                <StatCard title="Pending Orders" value={String(pendingOrdersCount)} icon={<PurchasesIcon className="w-6 h-6 text-indigo-500" />} />
+                <StatCard title="Out of Stock Items" value={String(outOfStockCount)} icon={<InventoryIcon className="w-6 h-6 text-indigo-500" />} />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Sales Chart */}
-                <div className="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
-                    <h3 className="font-semibold text-lg mb-4 text-gray-800 dark:text-white">Sales & Profit Overview</h3>
-                    <ResponsiveContainer width="100%" height={350}>
-                        <BarChart data={mockSalesDataForChart} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-                            <defs>
-                                <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.8}/>
-                                <stop offset="95%" stopColor="#818cf8" stopOpacity={0.8}/>
+                {/* Main Charts Column */}
+                <div className="lg:col-span-2 space-y-8">
+                    {/* Sales Chart */}
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+                        <h3 className="font-semibold text-lg mb-4 text-gray-800 dark:text-white">Sales & Profit Trend</h3>
+                        <ResponsiveContainer width="100%" height={300}>
+                            <AreaChart data={mockSalesDataForChart} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                                 <defs>
+                                    <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.8}/>
+                                    <stop offset="95%" stopColor="#4f46e5" stopOpacity={0}/>
+                                    </linearGradient>
+                                     <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#34d399" stopOpacity={0.8}/>
+                                    <stop offset="95%" stopColor="#34d399" stopOpacity={0}/>
                                 </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} vertical={false} />
-                            <XAxis dataKey="name" tick={{ fill: '#6b7280' }} axisLine={false} tickLine={false} />
-                            <YAxis tick={{ fill: '#6b7280' }} axisLine={false} tickLine={false} tickFormatter={(value) => `$${Number(value)/1000}k`} />
-                            <Tooltip content={<CustomTooltip />} cursor={{fill: 'rgba(79, 70, 229, 0.1)'}} />
-                            <Legend wrapperStyle={{paddingTop: '20px'}}/>
-                            <Bar dataKey="sales" fill="url(#colorSales)" radius={[4, 4, 0, 0]} />
-                            <Bar dataKey="profit" fill="#34d399" radius={[4, 4, 0, 0]} />
-                        </BarChart>
-                    </ResponsiveContainer>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} vertical={false} />
+                                <XAxis dataKey="name" tick={{ fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                                <YAxis tick={{ fill: '#6b7280' }} axisLine={false} tickLine={false} tickFormatter={(value) => `$${Number(value)/1000}k`} />
+                                <Tooltip content={<CustomTooltip />} cursor={{fill: 'rgba(79, 70, 229, 0.1)'}} />
+                                <Legend wrapperStyle={{paddingTop: '20px'}}/>
+                                <Area type="monotone" dataKey="sales" stroke="#4f46e5" fill="url(#colorSales)" strokeWidth={2} />
+                                <Area type="monotone" dataKey="profit" stroke="#34d399" fill="url(#colorProfit)" strokeWidth={2} />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </div>
+                     {/* Order Status Chart */}
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+                        <h3 className="font-semibold text-lg mb-4 text-gray-800 dark:text-white">Order Status Overview</h3>
+                         <ResponsiveContainer width="100%" height={300}>
+                            <PieChart>
+                                 {/* FIX: Explicitly type the props for the label renderer to resolve TypeScript error. */}
+                                 <Pie data={orderStatusData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={110} labelLine={false} label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                                     {orderStatusData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={COLORS[entry.name as keyof typeof COLORS]} />
+                                     ))}
+                                 </Pie>
+                                 <Tooltip content={<CustomTooltip />} />
+                                 <Legend />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </div>
                 </div>
 
-                {/* Side Panels */}
+                {/* Side Panels Column */}
                 <div className="space-y-8">
-                    {/* Upcoming Reminders */}
                     <UpcomingReminders />
-                    
-                    {/* Inventory Alerts */}
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
-                        <h3 className="font-semibold text-lg mb-4 text-gray-800 dark:text-white">Inventory Alerts</h3>
-                        <ul className="space-y-3">
-                            {lowStockItems.map(item => (
-                                <li key={item.id} className="flex items-center justify-between text-sm">
-                                    <div>
-                                        <p className="font-medium text-gray-800 dark:text-gray-200">{item.name}</p>
-                                        <p className="text-gray-500">{item.stock} units left</p>
-                                    </div>
-                                    <span className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300">Low Stock</span>
-                                </li>
-                            ))}
-                            {outOfStockItems.map(item => (
-                                <li key={item.id} className="flex items-center justify-between text-sm">
-                                    <div>
-                                        <p className="font-medium text-gray-800 dark:text-gray-200">{item.name}</p>
-                                        <p className="text-gray-500">Out of stock</p>
-                                    </div>
-                                    <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300">Out of Stock</span>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-
-                     {/* Top Selling Products */}
-                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
-                        <h3 className="font-semibold text-lg mb-4 text-gray-800 dark:text-white">Top Selling Products</h3>
-                        <ul className="space-y-3">
-                            {topSellingProducts.map(({ product, quantitySold }, index) => (
-                                <li key={product?.id || index} className="flex items-center justify-between text-sm">
-                                    <p className="font-medium text-gray-800 dark:text-gray-200 truncate">{product?.name || 'Unknown Product'}</p>
-                                    <p className="text-gray-500 font-semibold">{quantitySold.toLocaleString()} sold</p>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-
                     {/* Recent Activity */}
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
                         <h3 className="font-semibold text-lg mb-4 text-gray-800 dark:text-white">Recent Activity</h3>
@@ -255,15 +189,28 @@ const DashboardPage: React.FC = () => {
                     </div>
                 </div>
             </div>
-             {/* Modals */}
-            <AddEditProductModal isOpen={isAddProductModalOpen} onClose={() => setAddProductModalOpen(false)} product={null} />
-            <CreateSalesOrderModal isOpen={isSalesModalOpen} onClose={() => setSalesModalOpen(false)} />
-            <CreatePurchaseOrderModal isOpen={isPurchaseModalOpen} onClose={() => setPurchaseModalOpen(false)} />
-            <Modal isOpen={isScannerOpen} onClose={() => setScannerOpen(false)} title="Scan Barcode">
-                <BarcodeScanner />
-            </Modal>
         </div>
     );
+};
+
+const UserDashboard: React.FC = () => {
+    const { currentUser } = useAuth();
+    return (
+        <div className="text-center py-20">
+            <h2 className="text-4xl font-bold text-gray-800 dark:text-white">Welcome, {currentUser?.name}!</h2>
+            <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">
+                Use the sidebar to navigate to your tasks.
+            </p>
+        </div>
+    );
+}
+
+
+const DashboardPage: React.FC = () => {
+    const { currentUser } = useAuth();
+    const isAdmin = currentUser?.roles.includes('Admin');
+
+    return isAdmin ? <AdminDashboard /> : <UserDashboard />;
 };
 
 export default DashboardPage;

@@ -14,11 +14,12 @@ const SettingsPage: React.FC = () => {
         { id: 'profile', label: 'Profile', component: <ProfileSettings /> },
         { id: 'general', label: 'General', component: <GeneralSettings /> },
         { id: 'users', label: 'Users & Roles', component: <UsersAndRolesSettings /> },
+        { id: 'config', label: 'System Configuration', component: <SystemConfigSettings /> },
         { id: 'database', label: 'Database', component: <DatabaseSettings /> },
         { id: 'security', label: 'Security', component: <SecuritySettings /> },
     ];
 
-    const adminOnlyTabs = ['users', 'database', 'security'];
+    const adminOnlyTabs = ['users', 'database', 'security', 'config'];
     const availableTabs = allTabs.filter(tab => {
         // If the tab is an admin-only tab, check if the user is an admin.
         if (adminOnlyTabs.includes(tab.id)) {
@@ -320,6 +321,139 @@ const UsersAndRolesSettings: React.FC = () => {
         </div>
         <AddEditUserModal isOpen={isModalOpen} onClose={() => setModalOpen(false)} user={editingUser} />
     </div>
+    );
+};
+
+const SystemConfigSettings: React.FC = () => {
+    const { categories, addCategory, renameCategory, deleteCategory } = useData();
+    const [newCategory, setNewCategory] = useState('');
+    const [editingCategory, setEditingCategory] = useState<{ old: string, new: string } | null>(null);
+    const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
+    const [isDeleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  
+    const handleAddCategory = () => {
+      if (newCategory.trim() && !categories.includes(newCategory.trim())) {
+        addCategory(newCategory.trim());
+        setNewCategory('');
+      } else {
+        alert("Category cannot be empty or a duplicate.");
+      }
+    };
+  
+    const handleRenameCategory = () => {
+      if (editingCategory && editingCategory.new.trim() && !categories.includes(editingCategory.new.trim())) {
+        renameCategory(editingCategory.old, editingCategory.new.trim());
+        setEditingCategory(null);
+      } else {
+        alert("New category name cannot be empty or a duplicate.");
+      }
+    };
+
+    const handleDeleteClick = (category: string) => {
+        setCategoryToDelete(category);
+        setDeleteConfirmOpen(true);
+    };
+
+    const confirmDelete = () => {
+        if (categoryToDelete) {
+            deleteCategory(categoryToDelete);
+        }
+        setDeleteConfirmOpen(false);
+        setCategoryToDelete(null);
+    };
+  
+    return (
+      <>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Category Management */}
+            <div className="space-y-4">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Product Categories</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Manage the categories used for products.</p>
+                <div className="space-y-2">
+                    {categories.map(cat => (
+                    <div key={cat} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700/50 rounded-md">
+                        {editingCategory?.old === cat ? (
+                        <input
+                            type="text"
+                            value={editingCategory.new}
+                            onChange={(e) => setEditingCategory({ ...editingCategory, new: e.target.value })}
+                            className="flex-grow mr-2"
+                            autoFocus
+                        />
+                        ) : (
+                        <span className="text-gray-800 dark:text-gray-200">{cat}</span>
+                        )}
+                        <div className="space-x-2">
+                        {editingCategory?.old === cat ? (
+                            <>
+                            <button onClick={handleRenameCategory} className="text-sm text-green-600 hover:text-green-800">Save</button>
+                            <button onClick={() => setEditingCategory(null)} className="text-sm text-gray-600 hover:text-gray-800">Cancel</button>
+                            </>
+                        ) : (
+                            <>
+                            <button 
+                                onClick={() => setEditingCategory({ old: cat, new: cat })} 
+                                className="text-sm text-indigo-600 hover:text-indigo-800 disabled:text-gray-400 dark:disabled:text-gray-500"
+                                disabled={cat === 'Uncategorized'}
+                            >
+                                Rename
+                            </button>
+                            <button 
+                                onClick={() => handleDeleteClick(cat)} 
+                                className="text-sm text-red-600 hover:text-red-800 disabled:text-gray-400 dark:disabled:text-gray-500"
+                                disabled={cat === 'Uncategorized'}
+                            >
+                                Delete
+                            </button>
+                            </>
+                        )}
+                        </div>
+                    </div>
+                    ))}
+                </div>
+                <div className="flex items-center space-x-2 pt-4 border-t dark:border-gray-700">
+                    <input
+                    type="text"
+                    value={newCategory}
+                    onChange={(e) => setNewCategory(e.target.value)}
+                    placeholder="Add new category"
+                    className="flex-grow"
+                    />
+                    <button onClick={handleAddCategory} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Add</button>
+                </div>
+            </div>
+    
+            {/* Roles & Permissions Management */}
+            <div className="space-y-4">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Roles & Permissions</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Define roles and assign specific permissions.</p>
+                <div className="space-y-2">
+                {availableRoles.map(role => (
+                    <div key={role} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700/50 rounded-md">
+                    <span className="text-gray-800 dark:text-gray-200">{role}</span>
+                    <button className="text-sm text-indigo-600 hover:text-indigo-800" disabled>Manage Permissions</button>
+                    </div>
+                ))}
+                </div>
+                <p className="text-xs text-center text-gray-400 dark:text-gray-500 pt-4 border-t dark:border-gray-700">Full permission management is coming soon.</p>
+            </div>
+        </div>
+
+        <Modal isOpen={isDeleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} title="Confirm Category Deletion">
+            <div>
+                <p>
+                    Are you sure you want to delete the category "<strong>{categoryToDelete}</strong>"?
+                </p>
+                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                    All products in this category will be moved to "Uncategorized". This action cannot be undone.
+                </p>
+                <div className="flex justify-end pt-4 space-x-2 mt-4">
+                    <button onClick={() => setDeleteConfirmOpen(false)} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500">Cancel</button>
+                    <button onClick={confirmDelete} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Delete</button>
+                </div>
+            </div>
+        </Modal>
+      </>
     );
 };
 

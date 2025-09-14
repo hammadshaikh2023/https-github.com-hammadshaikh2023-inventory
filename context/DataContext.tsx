@@ -1,3 +1,5 @@
+
+
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { Product, SalesOrder, PurchaseOrder, OrderItem, User, Currency, GatePass, HistoryEntry, PackingSlip, ShippingLabel, Reminder } from '../types';
 import { mockProducts, mockSalesOrders, mockPurchaseOrders, mockUsers } from '../data/mockData';
@@ -23,6 +25,7 @@ interface DataContextType {
     packingSlips: PackingSlip[];
     shippingLabels: ShippingLabel[];
     reminders: Reminder[];
+    categories: string[];
     addProduct: (product: Omit<Product, 'id'>) => void;
     updateProduct: (product: Product) => void;
     deleteProducts: (productIds: string[]) => void;
@@ -41,6 +44,9 @@ interface DataContextType {
     updatePurchaseOrderStatus: (orderId: string, status: PurchaseOrder['status'], userName: string) => void;
     updatePurchaseOrderTrackingNumber: (orderId: string, trackingNumber: string, userName: string) => void;
     updateProductStock: (productId: string, quantityChange: number, reason: string, userName: string) => void;
+    addCategory: (category: string) => void;
+    renameCategory: (oldName: string, newName: string) => void;
+    deleteCategory: (category: string) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -74,6 +80,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [packingSlips, setPackingSlips] = useState<PackingSlip[]>([]);
     const [shippingLabels, setShippingLabels] = useState<ShippingLabel[]>([]);
     const [reminders, setReminders] = useState<Reminder[]>([]);
+    const [categories, setCategories] = useState<string[]>(['Uncategorized', 'Aggregates', 'Binders', 'Additives', 'Lab Supplies']);
     
     useEffect(() => {
         const loadAndCacheData = async () => {
@@ -262,49 +269,83 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         performOrQueueUpdate({ type: 'ADD_PURCHASE_ORDER', payload: newOrder });
     };
     
-    const updateSalesOrderStatus = (orderId: string, status: SalesOrder['status'], userName: string) => {
-        let updatedOrder: SalesOrder | undefined;
+    const updateSalesOrderStatus = (orderId: string, newStatus: SalesOrder['status'], userName: string) => {
+        const originalOrder = salesOrders.find(o => o.id === orderId);
+        if (!originalOrder || originalOrder.status === newStatus) {
+            return; // No change needed
+        }
+    
+        const oldStatus = originalOrder.status;
+    
+        // --- Stock Adjustment Logic ---
+        // From Cancelled to Pending: Re-deduct stock
+        if (oldStatus === 'Cancelled' && newStatus === 'Pending') {
+            originalOrder.items.forEach(item => {
+                updateProductStock(item.productId, -item.quantity, `Reverted from Cancelled for SO #${orderId}`, userName);
+            });
+        }
+        // From Pending/Fulfilled to Cancelled: Return stock
+        else if ((oldStatus === 'Pending' || oldStatus === 'Fulfilled') && newStatus === 'Cancelled') {
+            originalOrder.items.forEach(item => {
+                updateProductStock(item.productId, item.quantity, `Cancelled SO #${orderId}`, userName);
+            });
+        }
+        // From Fulfilled to Pending: No change in stock, it was already deducted.
+        
+        // Update the order state
         setSalesOrders(prev => prev.map(order => {
             if (order.id === orderId) {
                 const newHistoryEntry: HistoryEntry = {
                     timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
-                    action: `Status changed to ${status}`,
+                    action: `Status changed from ${oldStatus} to ${newStatus}`, // More descriptive
                     user: userName
                 };
-                updatedOrder = { ...order, status, history: [newHistoryEntry, ...order.history] };
-                return updatedOrder;
+                return { ...order, status: newStatus, history: [newHistoryEntry, ...order.history] };
             }
             return order;
         }));
-        if (updatedOrder) {
-             performOrQueueUpdate({ type: 'UPDATE_SALES_ORDER_STATUS', payload: { orderId, status, userName } });
-        }
+        
+        performOrQueueUpdate({ type: 'UPDATE_SALES_ORDER_STATUS', payload: { orderId, status: newStatus, userName } });
     };
 
-    const updatePurchaseOrderStatus = (orderId: string, status: PurchaseOrder['status'], userName: string) => {
+    const updatePurchaseOrderStatus = (orderId: string, newStatus: PurchaseOrder['status'], userName: string) => {
         let updatedOrder: PurchaseOrder | undefined;
+        const originalOrder = purchaseOrders.find(o => o.id === orderId);
+        if (!originalOrder) return;
+    
         setPurchaseOrders(prev => prev.map(order => {
             if (order.id === orderId) {
                 const newHistoryEntry: HistoryEntry = {
                     timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
-                    action: `Status changed to ${status}`,
+                    action: `Status changed from ${order.status} to ${newStatus}`,
                     user: userName
                 };
-                
-                if (status === 'Received' && order.status !== 'Received') {
+    
+                // If status changed TO Received from something else
+                if (newStatus === 'Received' && order.status !== 'Received') {
                     order.items.forEach(item => {
                         if(item.productId) {
-                            updateProductStock(item.productId, item.quantity, `Received Purchase Order ${order.id}`, userName);
+                            updateProductStock(item.productId, item.quantity, `Received from PO ${order.id}`, userName);
                         }
                     });
                 }
-                updatedOrder = { ...order, status, history: [newHistoryEntry, ...order.history] };
+                // If status changed FROM Received to something else
+                else if (order.status === 'Received' && newStatus !== 'Received') {
+                     order.items.forEach(item => {
+                        if(item.productId) {
+                            updateProductStock(item.productId, -item.quantity, `Reverted status on PO ${order.id}`, userName);
+                        }
+                    });
+                }
+    
+                updatedOrder = { ...order, status: newStatus, history: [newHistoryEntry, ...order.history] };
                 return updatedOrder;
             }
             return order;
         }));
+    
         if (updatedOrder) {
-            performOrQueueUpdate({ type: 'UPDATE_PURCHASE_ORDER_STATUS', payload: { orderId, status, userName } });
+            performOrQueueUpdate({ type: 'UPDATE_PURCHASE_ORDER_STATUS', payload: { orderId, status: newStatus, userName } });
         }
     };
 
@@ -433,9 +474,43 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         performOrQueueUpdate({ type: 'UPDATE_REMINDER_STATUS', payload: { reminderId, status } });
     };
 
+    const addCategory = (category: string) => {
+        setCategories(prev => [...prev, category].sort());
+    };
+    
+    const renameCategory = (oldName: string, newName: string) => {
+        setCategories(prev => prev.map(c => (c === oldName ? newName : c)).sort());
+        // Also update all products using this category
+        setProducts(prev => prev.map(p => (p.category === oldName ? { ...p, category: newName } : p)));
+    };
+    
+    const deleteCategory = (category: string) => {
+        // Prevent deletion of the default category
+        if (category === 'Uncategorized') {
+            alert("The 'Uncategorized' category cannot be deleted.");
+            return;
+        }
+
+        // Move products from the deleted category to 'Uncategorized'
+        setProducts(prevProducts => 
+            prevProducts.map(p => 
+                p.category === category ? { ...p, category: 'Uncategorized' } : p
+            )
+        );
+
+        // Update the categories list: remove the deleted one, and ensure 'Uncategorized' exists.
+        setCategories(prevCategories => {
+            const newCategoryList = prevCategories.filter(c => c !== category);
+            if (!newCategoryList.includes('Uncategorized')) {
+                newCategoryList.push('Uncategorized');
+                newCategoryList.sort();
+            }
+            return newCategoryList;
+        });
+    };
 
     return (
-        <DataContext.Provider value={{ products, salesOrders, purchaseOrders, users, gatePasses, packingSlips, shippingLabels, reminders, addProduct, updateProduct, deleteProducts, updateProductStatus, addSalesOrder, addPurchaseOrder, addUser, updateUser, addGatePass, addPackingSlip, addShippingLabel, addReminder, updateReminderStatus, updateSalesOrderStatus, updatePurchaseOrderStatus, updatePurchaseOrderTrackingNumber, updateProductStock, updateGatePassStatus }}>
+        <DataContext.Provider value={{ products, salesOrders, purchaseOrders, users, gatePasses, packingSlips, shippingLabels, reminders, categories, addProduct, updateProduct, deleteProducts, updateProductStatus, addSalesOrder, addPurchaseOrder, addUser, updateUser, addGatePass, addPackingSlip, addShippingLabel, addReminder, updateReminderStatus, updateSalesOrderStatus, updatePurchaseOrderStatus, updatePurchaseOrderTrackingNumber, updateProductStock, updateGatePassStatus, addCategory, renameCategory, deleteCategory }}>
             {children}
         </DataContext.Provider>
     );

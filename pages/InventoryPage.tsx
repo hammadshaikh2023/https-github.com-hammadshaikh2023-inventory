@@ -1,9 +1,3 @@
-
-
-
-
-
-
 import React from 'react';
 import { useState, useMemo, useEffect } from 'react';
 import DataTable from '../components/DataTable';
@@ -24,7 +18,7 @@ export const AddEditProductModal: React.FC<{
     product: Product | null,
 }> = ({ isOpen, onClose, product }) => {
     
-    const { addProduct, updateProduct } = useData();
+    const { addProduct, updateProduct, categories } = useData();
     const { defaultCurrency } = useSettings();
     const [formData, setFormData] = useState<Partial<Product>>({});
     const [showHistory, setShowHistory] = useState(false);
@@ -175,10 +169,7 @@ export const AddEditProductModal: React.FC<{
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
                         <select name="category" value={formData.category || ''} onChange={handleChange} required className="mt-1 block w-full shadow-sm rounded-md">
                             <option value="">Select Category</option>
-                            <option value="Aggregates">Aggregates</option>
-                            <option value="Binders">Binders</option>
-                            <option value="Additives">Additives</option>
-                            <option value="Lab Supplies">Lab Supplies</option>
+                            {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                         </select>
                     </div>
                     <div>
@@ -492,7 +483,7 @@ const qualitySortOrder: Record<Product['qualityTestStatus'], number> = {
 
 const InventoryPage: React.FC = () => {
     const { currentUser } = useAuth();
-    const { products, deleteProducts, updateProductStatus } = useData();
+    const { products, deleteProducts, updateProductStatus, categories } = useData();
     const [isScannerOpen, setScannerOpen] = useState(false);
     const [isAddEditModalOpen, setAddEditModalOpen] = useState(false);
     const [isUpdateStockModalOpen, setUpdateStockModalOpen] = useState(false);
@@ -539,10 +530,15 @@ const InventoryPage: React.FC = () => {
             );
     }, [products, debouncedSearchTerm, statusFilter, categoryFilter, expiryFilter, supplierFilter]);
     
-    const categories = ['All', ...Array.from(new Set(products.map(p => p.category)))];
-    const categoryOptions = categories.map(c => ({ value: c, label: c === 'All' ? 'All Categories' : c }));
-    const suppliers = ['All', ...Array.from(new Set(products.map(p => p.supplier)))];
-    const supplierOptions = suppliers.map(s => ({ value: s, label: s === 'All' ? 'All Suppliers' : s }));
+    const categoryOptions = useMemo(() => {
+        return [{ value: 'All', label: 'All Categories' }, ...categories.map(c => ({ value: c, label: c }))]
+    }, [categories]);
+
+    const supplierOptions = useMemo(() => {
+        const uniqueSuppliers = ['All', ...Array.from(new Set(products.map(p => p.supplier)))];
+        return uniqueSuppliers.map(s => ({ value: s, label: s === 'All' ? 'All Suppliers' : s }));
+    }, [products]);
+
 
     const statusOptions = [
         { value: 'All', label: 'All Statuses' },

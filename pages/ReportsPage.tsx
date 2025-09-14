@@ -87,7 +87,8 @@ const ReportsPage: React.FC = () => {
                                 fill="#8884d8"
                                 dataKey="value"
                                 nameKey="name"
-                                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                // FIX: Explicitly type the props for the label renderer to resolve TypeScript error.
+                                label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(0)}%`}
                             >
                                 {stockByCategoryData.map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />

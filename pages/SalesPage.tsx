@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect, useMemo } from 'react';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
@@ -268,7 +270,7 @@ const ViewSalesOrderModal: React.FC<{
     if (!order) return null;
 
     const handleStatusChange = (newStatus: SalesOrder['status']) => {
-        if (order && currentUser) {
+        if (order && currentUser && newStatus !== order.status) {
             updateSalesOrderStatus(order.id, newStatus, currentUser.name);
         }
         onClose();
@@ -327,10 +329,17 @@ const ViewSalesOrderModal: React.FC<{
                 </div>
                 <div className="flex justify-between items-center pt-4 border-t dark:border-gray-700">
                     <p className="font-semibold text-gray-800 dark:text-white">Total: {order.currency} {order.total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
-                     { currentUser?.roles.includes('Admin') && order.status === 'Pending' && (
+                    {currentUser?.roles.includes('Admin') && (
                         <div className="flex space-x-2">
-                            <button onClick={() => handleStatusChange('Cancelled')} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Cancel Order</button>
-                            <button onClick={() => handleStatusChange('Fulfilled')} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Mark as Fulfilled</button>
+                            {order.status === 'Pending' && (
+                                <>
+                                    <button onClick={() => handleStatusChange('Cancelled')} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Cancel Order</button>
+                                    <button onClick={() => handleStatusChange('Fulfilled')} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Mark as Fulfilled</button>
+                                </>
+                            )}
+                            {(order.status === 'Fulfilled' || order.status === 'Cancelled') && (
+                                <button onClick={() => handleStatusChange('Pending')} className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600">Revert to Pending</button>
+                            )}
                         </div>
                     )}
                 </div>
