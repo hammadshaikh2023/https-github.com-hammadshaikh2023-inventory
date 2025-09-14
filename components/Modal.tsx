@@ -1,5 +1,4 @@
 
-
 import React, { ReactNode, useEffect } from 'react';
 import { CloseIcon } from './IconComponents';
 
