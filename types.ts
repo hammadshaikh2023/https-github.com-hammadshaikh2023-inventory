@@ -90,6 +90,15 @@ export interface User {
     avatarUrl?: string;
 }
 
+export interface Supplier {
+  id: string;
+  name: string;
+  contactPerson?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+}
+
 export interface AuditLog {
     id: string;
     timestamp: string;

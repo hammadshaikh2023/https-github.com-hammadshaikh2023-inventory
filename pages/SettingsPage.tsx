@@ -79,7 +79,7 @@ const FormField: React.FC<{label: string, type: string, placeholder: string, id:
 ({label, type, placeholder, id, value, onChange, required}) => (
     <div>
         <label htmlFor={id} className="block text-sm font-medium text-gray-700 dark:text-gray-300">{label}</label>
-        <input type={type} id={id} name={id} placeholder={placeholder} value={value} onChange={onChange} required={required} className="mt-1 block w-full shadow-sm rounded-md" />
+        <input type={type} id={id} name={id} placeholder={placeholder} value={value} onChange={onChange} required={required} className="mt-1 block w-full" />
     </div>
 );
 
@@ -88,26 +88,26 @@ const ProfileSettings: React.FC = () => (
         <h3 className="text-lg font-medium text-gray-900 dark:text-white">User Profile</h3>
         <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Full Name</label>
-            <input type="text" id="name" placeholder="Admin User" className="mt-1 block w-full shadow-sm rounded-md" />
+            <input type="text" id="name" placeholder="Admin User" className="mt-1 block w-full" />
         </div>
         <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email Address</label>
-            <input type="email" id="email" placeholder="admin@example.com" className="mt-1 block w-full shadow-sm rounded-md" />
+            <input type="email" id="email" placeholder="admin@example.com" className="mt-1 block w-full" />
         </div>
         <div className="pt-4 border-t dark:border-gray-700">
              <h3 className="text-lg font-medium text-gray-900 dark:text-white">Change Password</h3>
              <div className="space-y-4 mt-4">
                  <div>
                     <label htmlFor="current_password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Current Password</label>
-                    <input type="password" id="current_password" placeholder="••••••••" className="mt-1 block w-full shadow-sm rounded-md" />
+                    <input type="password" id="current_password" placeholder="••••••••" className="mt-1 block w-full" />
                 </div>
                 <div>
                     <label htmlFor="new_password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">New Password</label>
-                    <input type="password" id="new_password" placeholder="••••••••" className="mt-1 block w-full shadow-sm rounded-md" />
+                    <input type="password" id="new_password" placeholder="••••••••" className="mt-1 block w-full" />
                 </div>
                 <div>
                     <label htmlFor="confirm_password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Confirm New Password</label>
-                    <input type="password" id="confirm_password" placeholder="••••••••" className="mt-1 block w-full shadow-sm rounded-md" />
+                    <input type="password" id="confirm_password" placeholder="••••••••" className="mt-1 block w-full" />
                 </div>
              </div>
         </div>
@@ -134,7 +134,7 @@ const GeneralSettings: React.FC = () => {
                     id="low-stock-threshold"
                     value={lowStockThreshold}
                     onChange={(e) => setLowStockThreshold(Number(e.target.value))}
-                    className="mt-1 block w-full max-w-xs shadow-sm rounded-md"
+                    className="mt-1 block w-full"
                 />
             </div>
         </div>
@@ -481,7 +481,7 @@ const DatabaseSettings: React.FC = () => {
                 <select 
                     value={dbType}
                     onChange={(e) => setDbType(e.target.value)}
-                    className="mt-1 block w-full shadow-sm rounded-md"
+                    className="mt-1 block w-full"
                 >
                     <option value="local">Local Server</option>
                     <option value="cloud">Cloud Server</option>
@@ -490,13 +490,13 @@ const DatabaseSettings: React.FC = () => {
             {dbType === 'local' && (
                  <div>
                     <label htmlFor="local_path" className="block text-sm font-medium text-gray-700 dark:text-gray-300">SQLite File Path</label>
-                    <input type="text" id="local_path" placeholder="/path/to/database.sqlite" className="mt-1 block w-full shadow-sm rounded-md" />
+                    <input type="text" id="local_path" placeholder="/path/to/database.sqlite" className="mt-1 block w-full" />
                 </div>
             )}
             {dbType === 'cloud' && (
                 <div>
                     <label htmlFor="cloud_string" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Connection String</label>
-                    <input type="text" id="cloud_string" placeholder="postgres://user:pass@host:port/dbname" className="mt-1 block w-full shadow-sm rounded-md" />
+                    <input type="text" id="cloud_string" placeholder="postgres://user:pass@host:port/dbname" className="mt-1 block w-full" />
                 </div>
             )}
              <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Save Connection</button>

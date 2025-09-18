@@ -1,8 +1,6 @@
-
-
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
-import { Product, SalesOrder, PurchaseOrder, OrderItem, User, Currency, GatePass, HistoryEntry, PackingSlip, ShippingLabel, Reminder } from '../types';
-import { mockProducts, mockSalesOrders, mockPurchaseOrders, mockUsers } from '../data/mockData';
+import { Product, SalesOrder, PurchaseOrder, OrderItem, User, Currency, GatePass, HistoryEntry, PackingSlip, ShippingLabel, Reminder, Supplier } from '../types';
+import { mockProducts, mockSalesOrders, mockPurchaseOrders, mockUsers, mockSuppliers } from '../data/mockData';
 import { useSettings } from './SettingsContext';
 import * as idb from '../utils/idb';
 import { 
@@ -14,6 +12,7 @@ import {
     GATE_PASS_STORE_NAME,
     PACKING_SLIPS_STORE_NAME,
     SHIPPING_LABELS_STORE_NAME,
+    SUPPLIERS_STORE_NAME,
 } from '../utils/idb';
 
 interface DataContextType {
@@ -21,19 +20,21 @@ interface DataContextType {
     salesOrders: SalesOrder[];
     purchaseOrders: PurchaseOrder[];
     users: User[];
+    suppliers: Supplier[];
     gatePasses: GatePass[];
     packingSlips: PackingSlip[];
     shippingLabels: ShippingLabel[];
     reminders: Reminder[];
     categories: string[];
     addProduct: (product: Omit<Product, 'id'>) => void;
-    updateProduct: (product: Product) => void;
+    updateProduct: (product: Product, updatedBy?: string) => void;
     deleteProducts: (productIds: string[]) => void;
     updateProductStatus: (productIds: string[], status: Product['status']) => void;
     addSalesOrder: (order: Omit<SalesOrder, 'id' | 'total' | 'status' | 'history'>, userName: string) => void;
     addPurchaseOrder: (order: Omit<PurchaseOrder, 'id' | 'total' | 'status' | 'history'>, userName: string) => void;
     addUser: (user: Omit<User, 'id'>) => void;
     updateUser: (user: User) => void;
+    addSupplier: (supplier: Omit<Supplier, 'id'>) => Supplier;
     addGatePass: (gatePass: Omit<GatePass, 'gatePassId' | 'issueDate' | 'status'>) => void;
     updateGatePassStatus: (gatePassId: string, clearedByUser: string) => void;
     addPackingSlip: (packingSlip: { orderId: string }) => void;
@@ -76,6 +77,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [salesOrders, setSalesOrders] = useState<SalesOrder[]>([]);
     const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
     const [users, setUsers] = useState<User[]>([]);
+    const [suppliers, setSuppliers] = useState<Supplier[]>([]);
     const [gatePasses, setGatePasses] = useState<GatePass[]>([]);
     const [packingSlips, setPackingSlips] = useState<PackingSlip[]>([]);
     const [shippingLabels, setShippingLabels] = useState<ShippingLabel[]>([]);
@@ -93,6 +95,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 const cachedSalesOrders = await idb.loadData<SalesOrder>(SALES_ORDERS_STORE_NAME);
                 const cachedPurchaseOrders = await idb.loadData<PurchaseOrder>(PURCHASE_ORDERS_STORE_NAME);
                 const cachedUsers = await idb.loadData<User>(USERS_STORE_NAME);
+                const cachedSuppliers = await idb.loadData<Supplier>(SUPPLIERS_STORE_NAME);
                 const cachedReminders = await idb.loadData<Reminder>(REMINDERS_STORE_NAME);
                 const cachedGatePasses = await idb.loadData<GatePass>(GATE_PASS_STORE_NAME);
                 const cachedPackingSlips = await idb.loadData<PackingSlip>(PACKING_SLIPS_STORE_NAME);
@@ -103,6 +106,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 if (cachedSalesOrders.length > 0) setSalesOrders(cachedSalesOrders);
                 if (cachedPurchaseOrders.length > 0) setPurchaseOrders(cachedPurchaseOrders);
                 if (cachedUsers.length > 0) setUsers(cachedUsers);
+                if (cachedSuppliers.length > 0) setSuppliers(cachedSuppliers);
                 if (cachedReminders.length > 0) setReminders(cachedReminders);
                 if (cachedGatePasses.length > 0) setGatePasses(cachedGatePasses);
                 if (cachedPackingSlips.length > 0) setPackingSlips(cachedPackingSlips);
@@ -119,12 +123,14 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     const freshSalesOrders = mockSalesOrders;
                     const freshPurchaseOrders = mockPurchaseOrders;
                     const freshUsers = mockUsers;
+                    const freshSuppliers = mockSuppliers;
                     
                     // Update state
                     setProducts(freshProducts);
                     setSalesOrders(freshSalesOrders);
                     setPurchaseOrders(freshPurchaseOrders);
                     setUsers(freshUsers);
+                    setSuppliers(freshSuppliers);
                     // Only overwrite user-generated data if cache is empty
                     if (cachedReminders.length === 0) setReminders([]);
                     if (cachedGatePasses.length === 0) setGatePasses([]);
@@ -136,6 +142,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     await idb.saveData(SALES_ORDERS_STORE_NAME, freshSalesOrders);
                     await idb.saveData(PURCHASE_ORDERS_STORE_NAME, freshPurchaseOrders);
                     await idb.saveData(USERS_STORE_NAME, freshUsers);
+                    await idb.saveData(SUPPLIERS_STORE_NAME, freshSuppliers);
 
 
                     console.log('Updated state and IndexedDB with fresh data.');
@@ -146,6 +153,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                      if(cachedSalesOrders.length === 0) setSalesOrders(mockSalesOrders);
                      if(cachedPurchaseOrders.length === 0) setPurchaseOrders(mockPurchaseOrders);
                      if(cachedUsers.length === 0) setUsers(mockUsers);
+                     if(cachedSuppliers.length === 0) setSuppliers(mockSuppliers);
                 }
 
             } catch (error) {
@@ -155,6 +163,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 setSalesOrders(mockSalesOrders);
                 setPurchaseOrders(mockPurchaseOrders);
                 setUsers(mockUsers);
+                setSuppliers(mockSuppliers);
             }
         };
 
@@ -204,13 +213,27 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         performOrQueueUpdate({ type: 'ADD_PRODUCT', payload: newProduct });
     };
     
-    const updateProduct = (updatedProduct: Product) => {
-        const productWithStatus = {
-            ...updatedProduct,
-            status: getProductStatus(updatedProduct.stock || 0)
-        };
-        setProducts(prevProducts => prevProducts.map(p => p.id === productWithStatus.id ? productWithStatus : p));
-        performOrQueueUpdate({ type: 'UPDATE_PRODUCT', payload: productWithStatus });
+    const updateProduct = (updatedProduct: Product, updatedBy: string = 'System') => {
+        const originalProduct = products.find(p => p.id === updatedProduct.id);
+        if (!originalProduct) return;
+
+        let finalProduct = { ...updatedProduct };
+
+        // Check if stock was changed via the edit form
+        if (originalProduct.stock !== updatedProduct.stock) {
+            const stockChange = updatedProduct.stock - originalProduct.stock;
+             const newHistoryEntry: HistoryEntry = {
+                timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+                action: `Stock adjusted by ${stockChange > 0 ? '+' : ''}${stockChange} units via product edit.`,
+                user: updatedBy,
+            };
+            finalProduct.history = [newHistoryEntry, ...(updatedProduct.history || [])];
+        }
+
+        finalProduct.status = getProductStatus(finalProduct.stock || 0);
+        
+        setProducts(prevProducts => prevProducts.map(p => p.id === finalProduct.id ? finalProduct : p));
+        performOrQueueUpdate({ type: 'UPDATE_PRODUCT', payload: finalProduct });
     }
 
     const deleteProducts = (productIds: string[]) => {
@@ -392,6 +415,16 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         performOrQueueUpdate({ type: 'UPDATE_USER', payload: updatedUser });
     };
 
+    const addSupplier = (supplierData: Omit<Supplier, 'id'>): Supplier => {
+        const newSupplier: Supplier = {
+            ...supplierData,
+            id: `SUP-${String(Date.now()).slice(-4)}`,
+        };
+        setSuppliers(prev => [newSupplier, ...prev].sort((a,b) => a.name.localeCompare(b.name)));
+        performOrQueueUpdate({ type: 'ADD_SUPPLIER', payload: newSupplier });
+        return newSupplier;
+    };
+
     const addGatePass = (gatePassData: Omit<GatePass, 'gatePassId' | 'issueDate' | 'status'>) => {
         const newGatePass: GatePass = {
             ...gatePassData,
@@ -510,7 +543,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     return (
-        <DataContext.Provider value={{ products, salesOrders, purchaseOrders, users, gatePasses, packingSlips, shippingLabels, reminders, categories, addProduct, updateProduct, deleteProducts, updateProductStatus, addSalesOrder, addPurchaseOrder, addUser, updateUser, addGatePass, addPackingSlip, addShippingLabel, addReminder, updateReminderStatus, updateSalesOrderStatus, updatePurchaseOrderStatus, updatePurchaseOrderTrackingNumber, updateProductStock, updateGatePassStatus, addCategory, renameCategory, deleteCategory }}>
+        <DataContext.Provider value={{ products, salesOrders, purchaseOrders, users, suppliers, gatePasses, packingSlips, shippingLabels, reminders, categories, addProduct, updateProduct, deleteProducts, updateProductStatus, addSalesOrder, addPurchaseOrder, addUser, updateUser, addSupplier, addGatePass, addPackingSlip, addShippingLabel, addReminder, updateReminderStatus, updateSalesOrderStatus, updatePurchaseOrderStatus, updatePurchaseOrderTrackingNumber, updateProductStock, updateGatePassStatus, addCategory, renameCategory, deleteCategory }}>
             {children}
         </DataContext.Provider>
     );

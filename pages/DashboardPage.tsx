@@ -100,7 +100,7 @@ const AdminDashboard: React.FC = () => {
             <div className="p-4 bg-gray-900/80 text-white rounded-lg shadow-lg">
               <p className="label font-bold">{`${label || payload[0].name}`}</p>
               {payload.map((entry: any, index: number) => (
-                  <p key={`item-${index}`} style={{ color: entry.color || entry.stroke }}>
+                  <p key={`item-${index}`} style={{ color: entry.dataKey === 'sales' ? '#f97316' : (entry.color || entry.stroke) }}>
                       {`${entry.name}: ${entry.value.toLocaleString(undefined, {style: entry.dataKey === 'profit' || entry.dataKey === 'sales' ? 'currency' : 'decimal', currency: 'USD'})}`}
                   </p>
               ))}

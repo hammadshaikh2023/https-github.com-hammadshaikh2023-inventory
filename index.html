@@ -23,6 +23,7 @@
       input[type="number"],
       input[type="tel"],
       input[type="date"],
+      input[type="datetime-local"],
       select,
       textarea {
         width: 100%;             /* Ensure full width by default */
@@ -38,6 +39,20 @@
         border-radius: 0.375rem; /* rounded-md */
         transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
       }
+      
+      .dark input[type="text"],
+      .dark input[type="email"],
+      .dark input[type="password"],
+      .dark input[type="number"],
+      .dark input[type="tel"],
+      .dark input[type="date"],
+      .dark input[type="datetime-local"],
+      .dark select,
+      .dark textarea {
+        background-color: #374151; /* gray-700 */
+        border-color: #4b5563; /* gray-600 */
+        color: #e5e7eb; /* gray-200 */
+      }
 
       input[type="text"]:focus,
       input[type="email"]:focus,
@@ -45,6 +60,7 @@
       input[type="number"]:focus,
       input[type="tel"]:focus,
       input[type="date"]:focus,
+      input[type="datetime-local"]:focus,
       select:focus,
       textarea:focus {
         outline: none;
@@ -52,14 +68,35 @@
         box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2); /* Ring effect */
       }
       
+      /* Specific style for product search input in modals */
+      .product-search-input {
+        background-color: #f3f4f6; /* Tailwind gray-100 */
+        padding-right: 2.5rem; /* Make space for arrow icon */
+      }
+
+      .dark .product-search-input {
+        background-color: #374151; /* Tailwind gray-700 */
+      }
+
       /* Specific override for inventory search to accommodate icon */
       #inventory-search {
         padding-left: 2.5rem;
       }
 
-      /* Adjust select padding to account for arrow */
+      /* Adjust select padding to account for custom arrow */
       select {
         padding-right: 2.5rem;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+        background-position: right 0.5rem center;
+        background-repeat: no-repeat;
+        background-size: 1.5em 1.5em;
+      }
+
+      .dark select {
+         background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
       }
 
       /* Global Font Size Control */

@@ -6,11 +6,68 @@ import BarcodeScanner from '../components/BarcodeScanner';
 import ExportDropdown from '../components/ExportDropdown';
 import CurrencySelector from '../components/CurrencySelector';
 import { useData } from '../context/DataContext';
-import { Product, Currency, HistoryEntry } from '../types';
+import { Product, Currency, HistoryEntry, Supplier } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
-import { QrCodeIcon, PlusIcon, CloseIcon, SearchIcon, MinusIcon, ArrowUpIcon, ArrowDownIcon, PrinterIcon } from '../components/IconComponents';
+import { QrCodeIcon, PlusIcon, CloseIcon, SearchIcon, MinusIcon, ArrowUpIcon, ArrowDownIcon, PrinterIcon, DownloadIcon } from '../components/IconComponents';
 import Dropdown from '../components/Dropdown';
+
+const AddSupplierModal: React.FC<{
+    isOpen: boolean;
+    onClose: () => void;
+    onSupplierAdded: (name: string) => void;
+}> = ({ isOpen, onClose, onSupplierAdded }) => {
+    const { addSupplier } = useData();
+    const [name, setName] = useState('');
+    const [contactPerson, setContactPerson] = useState('');
+    const [email, setEmail] = useState('');
+    const [phone, setPhone] = useState('');
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!name.trim()) {
+            alert("Supplier name cannot be empty.");
+            return;
+        }
+        const newSupplierData = { name, contactPerson, email, phone };
+        const newSupplier = addSupplier(newSupplierData);
+        onSupplierAdded(newSupplier.name);
+        onClose();
+        // Reset form
+        setName('');
+        setContactPerson('');
+        setEmail('');
+        setPhone('');
+    };
+
+    return (
+        <Modal isOpen={isOpen} onClose={onClose} title="Add New Supplier">
+            <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Supplier Name</label>
+                    <input type="text" value={name} onChange={e => setName(e.target.value)} required />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Contact Person (Optional)</label>
+                    <input type="text" value={contactPerson} onChange={e => setContactPerson(e.target.value)} />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email (Optional)</label>
+                    <input type="email" value={email} onChange={e => setEmail(e.target.value)} />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Phone (Optional)</label>
+                    <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} />
+                </div>
+                <div className="flex justify-end pt-4 space-x-2 border-t dark:border-gray-700 mt-4">
+                    <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500">Cancel</button>
+                    <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Add Supplier</button>
+                </div>
+            </form>
+        </Modal>
+    );
+};
+
 
 export const AddEditProductModal: React.FC<{
     isOpen: boolean,
@@ -18,11 +75,13 @@ export const AddEditProductModal: React.FC<{
     product: Product | null,
 }> = ({ isOpen, onClose, product }) => {
     
-    const { addProduct, updateProduct, categories } = useData();
+    const { addProduct, updateProduct, categories, suppliers } = useData();
     const { defaultCurrency } = useSettings();
+    const { currentUser } = useAuth();
     const [formData, setFormData] = useState<Partial<Product>>({});
     const [showHistory, setShowHistory] = useState(false);
     const [errors, setErrors] = useState<{ expires?: string; stock?: string }>({});
+    const [isAddSupplierModalOpen, setAddSupplierModalOpen] = useState(false);
 
     useEffect(() => {
         if (product) {
@@ -42,6 +101,10 @@ export const AddEditProductModal: React.FC<{
         setShowHistory(false); // Reset history view on modal open/product change
         setErrors({});
     }, [product, isOpen, defaultCurrency]);
+    
+    const handleSupplierAdded = (supplierName: string) => {
+        setFormData(prev => ({ ...prev, supplier: supplierName }));
+    };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -49,7 +112,6 @@ export const AddEditProductModal: React.FC<{
             setErrors(prev => ({ ...prev, expires: undefined }));
         }
 
-        // FIX: Argument of type '(prev: Partial<Product>) => { stock: string; ... }' is not assignable to parameter of type 'SetStateAction<Partial<Product>>'.
         if (name === 'stock') {
             const numValue = Number(value);
             if (value !== '' && (!Number.isInteger(numValue) || numValue < 0)) {
@@ -57,9 +119,6 @@ export const AddEditProductModal: React.FC<{
             } else {
                 setErrors(prev => ({ ...prev, stock: undefined }));
             }
-            // Correctly handle stock quantity updates. The value from an input is a string,
-            // but the state for 'stock' must be a number. This converts the value, handles empty strings
-            // by setting `undefined` (to clear the input), and avoids setting `NaN` on invalid input.
             if (value === '') {
                 setFormData(prev => ({ ...prev, stock: undefined }));
             } else if (!isNaN(numValue)) {
@@ -99,11 +158,8 @@ export const AddEditProductModal: React.FC<{
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         
-        // Re-validate stock on submit
         const stockValue = formData.stock;
         const stockNum = Number(stockValue);
-        // FIX: The `stockValue` is of type `number | undefined`, so it can never be an empty string `''`.
-        // This comparison was causing a type error and has been removed.
         if (stockValue === undefined || stockValue === null || !Number.isInteger(stockNum) || stockNum < 0) {
             setErrors(prev => ({ ...prev, stock: 'Quantity must be a positive integer.' }));
             return;
@@ -125,7 +181,20 @@ export const AddEditProductModal: React.FC<{
         const finalData = { ...formData, stock: stockNum };
 
         if (product) {
-            updateProduct(finalData as Product);
+            if (currentUser) {
+                 const currentStock = product.stock;
+                 const newStock = finalData.stock;
+
+                 if (currentStock !== newStock) {
+                    const newHistoryEntry: HistoryEntry = {
+                        timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+                        action: `Stock adjusted to ${newStock} (was ${currentStock}) via product edit.`,
+                        user: currentUser.name,
+                    };
+                    finalData.history = [newHistoryEntry, ...(product.history || [])];
+                 }
+            }
+            updateProduct(finalData as Product, currentUser?.name);
         } else {
             addProduct(finalData as Omit<Product, 'id'>);
         }
@@ -155,26 +224,26 @@ export const AddEditProductModal: React.FC<{
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Product Name</label>
-                        <input type="text" name="name" value={formData.name || ''} onChange={handleChange} required className="mt-1 block w-full shadow-sm rounded-md" />
+                        <input type="text" name="name" value={formData.name || ''} onChange={handleChange} required />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">SKU</label>
-                        <input type="text" name="sku" value={formData.sku || ''} onChange={handleChange} required className="mt-1 block w-full shadow-sm rounded-md" />
+                        <input type="text" name="sku" value={formData.sku || ''} onChange={handleChange} required />
                     </div>
                     <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Product Description</label>
-                        <textarea name="description" value={formData.description || ''} onChange={handleChange} rows={3} placeholder="Enter a detailed description..." className="mt-1 block w-full shadow-sm rounded-md"></textarea>
+                        <textarea name="description" value={formData.description || ''} onChange={handleChange} rows={3} placeholder="Enter a detailed description..."></textarea>
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
-                        <select name="category" value={formData.category || ''} onChange={handleChange} required className="mt-1 block w-full shadow-sm rounded-md">
+                        <select name="category" value={formData.category || ''} onChange={handleChange} required>
                             <option value="">Select Category</option>
                             {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                         </select>
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Warehouse</label>
-                        <select name="warehouse" value={formData.warehouse || ''} onChange={handleChange} required className="mt-1 block w-full shadow-sm rounded-md">
+                        <select name="warehouse" value={formData.warehouse || ''} onChange={handleChange} required>
                              <option value="">Select Warehouse</option>
                              <option value="Quarry Site A">Quarry Site A</option>
                              <option value="Main Plant">Main Plant</option>
@@ -184,7 +253,7 @@ export const AddEditProductModal: React.FC<{
                     </div>
                     <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Location in Warehouse</label>
-                        <input type="text" name="location" value={formData.location || ''} onChange={handleChange} placeholder="e.g., Aisle 5, Rack 3" className="mt-1 block w-full shadow-sm rounded-md" />
+                        <input type="text" name="location" value={formData.location || ''} onChange={handleChange} placeholder="e.g., Aisle 5, Rack 3" />
                     </div>
 
                     <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -219,14 +288,19 @@ export const AddEditProductModal: React.FC<{
                                 </button>
                             </div>
                             {errors.stock && <p className="text-red-500 text-xs mt-1">{errors.stock}</p>}
+                            {formData.unitOfMeasure === 'Ton' && formData.stock !== undefined && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    = {(Number(formData.stock) * 1000).toLocaleString()} kg
+                                </p>
+                            )}
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Reorder Level</label>
-                            <input type="number" name="reorderLevel" value={formData.reorderLevel ?? ''} onChange={handleChange} placeholder="e.g., 100" min="0" step="1" className="mt-1 block w-full shadow-sm rounded-md" />
+                            <input type="number" name="reorderLevel" value={formData.reorderLevel ?? ''} onChange={handleChange} placeholder="e.g., 100" min="0" step="1" />
                         </div>
                          <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Unit of Measure</label>
-                             <select name="unitOfMeasure" value={formData.unitOfMeasure || ''} onChange={handleChange} required className="mt-1 block w-full shadow-sm rounded-md">
+                             <select name="unitOfMeasure" value={formData.unitOfMeasure || ''} onChange={handleChange} required>
                                 <option value="">Select Unit</option>
                                 <option value="Ton">Ton</option>
                                 <option value="Cubic Meter">Cubic Meter</option>
@@ -238,11 +312,11 @@ export const AddEditProductModal: React.FC<{
                      <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">
                          <div>
                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Price per Unit</label>
-                             <input type="number" name="price" step="0.01" value={formData.price || ''} onChange={handleChange} required className="mt-1 block w-full shadow-sm rounded-md" />
+                             <input type="number" name="price" step="0.01" value={formData.price || ''} onChange={handleChange} required />
                          </div>
                          <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Unit Cost</label>
-                            <input type="number" name="unitCost" step="0.01" value={formData.unitCost || ''} onChange={handleChange} required className="mt-1 block w-full shadow-sm rounded-md" />
+                            <input type="number" name="unitCost" step="0.01" value={formData.unitCost || ''} onChange={handleChange} required />
                          </div>
                          <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Currency</label>
@@ -251,7 +325,28 @@ export const AddEditProductModal: React.FC<{
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Supplier</label>
-                        <input type="text" name="supplier" value={formData.supplier || ''} onChange={handleChange} className="mt-1 block w-full shadow-sm rounded-md" />
+                        <div className="mt-1 flex items-center space-x-2">
+                            <input
+                                type="text"
+                                name="supplier"
+                                value={formData.supplier || ''}
+                                onChange={handleChange}
+                                list="supplier-list"
+                                className="flex-grow"
+                                placeholder="Select or type supplier"
+                            />
+                            <datalist id="supplier-list">
+                                {suppliers.map(s => <option key={s.id} value={s.name} />)}
+                            </datalist>
+                            <button
+                                type="button"
+                                onClick={() => setAddSupplierModalOpen(true)}
+                                className="flex-shrink-0 p-3 bg-indigo-100 text-indigo-700 rounded-md hover:bg-indigo-200 dark:bg-indigo-900/50 dark:text-indigo-300 dark:hover:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                title="Add New Supplier"
+                            >
+                                <PlusIcon className="w-5 h-5" />
+                            </button>
+                        </div>
                     </div>
                     <div>
                         <div className="flex justify-between items-center mb-1">
@@ -270,12 +365,11 @@ export const AddEditProductModal: React.FC<{
                             name="batchNumber"
                             value={formData.batchNumber || ''}
                             onChange={handleChange}
-                            className="block w-full shadow-sm rounded-md"
                         />
                     </div>
                      <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Quality Test Status</label>
-                         <select name="qualityTestStatus" value={formData.qualityTestStatus || ''} onChange={handleChange} required className="mt-1 block w-full shadow-sm rounded-md">
+                         <select name="qualityTestStatus" value={formData.qualityTestStatus || ''} onChange={handleChange} required>
                             <option value="Pending">Pending</option>
                             <option value="Passed">Passed</option>
                             <option value="Failed">Failed</option>
@@ -283,11 +377,11 @@ export const AddEditProductModal: React.FC<{
                     </div>
                      <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Date Added</label>
-                        <input type="date" name="dateAdded" value={formData.dateAdded || ''} onChange={handleChange} required className="mt-1 block w-full shadow-sm rounded-md" />
+                        <input type="date" name="dateAdded" value={formData.dateAdded || ''} onChange={handleChange} required />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Expiration Date (Optional)</label>
-                        <input type="date" name="expires" value={formData.expires || ''} onChange={handleChange} className="mt-1 block w-full shadow-sm rounded-md" />
+                        <input type="date" name="expires" value={formData.expires || ''} onChange={handleChange} />
                         {errors.expires && <p className="text-red-500 text-xs mt-1">{errors.expires}</p>}
                     </div>
                     <div className="md:col-span-2">
@@ -354,6 +448,11 @@ export const AddEditProductModal: React.FC<{
                     <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Save Product</button>
                 </div>
             </form>
+             <AddSupplierModal
+                isOpen={isAddSupplierModalOpen}
+                onClose={() => setAddSupplierModalOpen(false)}
+                onSupplierAdded={handleSupplierAdded}
+            />
         </Modal>
     );
 };
@@ -396,7 +495,11 @@ const UpdateStockModal: React.FC<{
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={`Update Stock for ${product.name}`}>
             <form onSubmit={handleSubmit} className="space-y-4">
-                <p>Current stock: <strong className="text-indigo-600 dark:text-indigo-400">{product.stock.toLocaleString()}</strong> units</p>
+                {product.unitOfMeasure === 'Ton' ? (
+                    <p>Current stock: <strong className="text-indigo-600 dark:text-indigo-400">{product.stock.toLocaleString()} Ton</strong> ({(product.stock * 1000).toLocaleString()} kg)</p>
+                ) : (
+                    <p>Current stock: <strong className="text-indigo-600 dark:text-indigo-400">{product.stock.toLocaleString()}</strong> {product.unitOfMeasure}{product.stock !== 1 ? 's' : ''}</p>
+                )}
                 <div className="flex items-center space-x-4">
                     <select value={action} onChange={e => setAction(e.target.value as 'add' | 'remove')}>
                         <option value="add">Add Stock</option>
@@ -433,6 +536,93 @@ const UpdateStockModal: React.FC<{
         </Modal>
     );
 };
+
+const ProductQrCodeModal: React.FC<{
+    isOpen: boolean;
+    onClose: () => void;
+    product: Product | null;
+}> = ({ isOpen, onClose, product }) => {
+    if (!isOpen || !product) return null;
+
+    const qrData = JSON.stringify({ productId: product.id, sku: product.sku });
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`;
+
+    const handlePrint = () => {
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+            printWindow.document.write(`
+                <html>
+                    <head>
+                        <title>Print QR Code for ${product.name}</title>
+                        <style>
+                            body { font-family: sans-serif; text-align: center; padding: 20px; }
+                            img { max-width: 100%; height: auto; }
+                            @media print {
+                                body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                                .no-print { display: none; }
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <h2>${product.name}</h2>
+                        <p><strong>SKU:</strong> ${product.sku}</p>
+                        <img src="${qrCodeUrl}" alt="QR Code" />
+                        <br />
+                        <button class="no-print" onclick="window.print()">Print</button>
+                    </body>
+                </html>
+            `);
+            printWindow.document.close();
+        }
+    };
+
+    const handleDownload = async () => {
+        if (!product) return;
+        try {
+            const response = await fetch(qrCodeUrl);
+            if (!response.ok) {
+                throw new Error('Network response was not ok.');
+            }
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = `${product.sku}_qrcode.png`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } catch (error) {
+            console.error('Error downloading the QR code:', error);
+            alert('Could not download the QR code. Please check your network connection and try again.');
+        }
+    };
+
+    return (
+        <Modal isOpen={isOpen} onClose={onClose} title={`QR Code for ${product.name}`}>
+            <div className="text-center">
+                <p className="mb-2"><strong>SKU:</strong> {product.sku}</p>
+                <div className="flex justify-center my-4">
+                    <img src={qrCodeUrl} alt={`QR Code for ${product.name}`} className="w-48 h-48 border p-2 rounded-md bg-white"/>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Scan this code to get product ID and SKU.</p>
+                <div className="flex justify-end pt-4 space-x-2 border-t dark:border-gray-700 mt-4">
+                    <button onClick={onClose} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500">Close</button>
+                    <button onClick={handleDownload} className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center">
+                        <DownloadIcon className="w-5 h-5 mr-2" />
+                        Download
+                    </button>
+                    <button onClick={handlePrint} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center">
+                        <PrinterIcon className="w-5 h-5 mr-2" />
+                        Print
+                    </button>
+                </div>
+            </div>
+        </Modal>
+    );
+};
+
 
 // Custom hook for debouncing a value.
 function useDebounce<T>(value: T, delay: number): T {
@@ -483,13 +673,15 @@ const qualitySortOrder: Record<Product['qualityTestStatus'], number> = {
 
 const InventoryPage: React.FC = () => {
     const { currentUser } = useAuth();
-    const { products, deleteProducts, updateProductStatus, categories } = useData();
+    const { products, deleteProducts, updateProductStatus, categories, suppliers } = useData();
     const [isScannerOpen, setScannerOpen] = useState(false);
     const [isAddEditModalOpen, setAddEditModalOpen] = useState(false);
     const [isUpdateStockModalOpen, setUpdateStockModalOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
     const [initialStockAction, setInitialStockAction] = useState<'add' | 'remove'>('add');
+    const [isQrModalOpen, setQrModalOpen] = useState(false);
+    const [productForQr, setProductForQr] = useState<Product | null>(null);
     
     // State for bulk action modals
     const [isDeleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -535,9 +727,8 @@ const InventoryPage: React.FC = () => {
     }, [categories]);
 
     const supplierOptions = useMemo(() => {
-        const uniqueSuppliers = ['All', ...Array.from(new Set(products.map(p => p.supplier)))];
-        return uniqueSuppliers.map(s => ({ value: s, label: s === 'All' ? 'All Suppliers' : s }));
-    }, [products]);
+        return [{ value: 'All', label: 'All Suppliers' }, ...suppliers.map(s => ({ value: s.name, label: s.name }))]
+    }, [suppliers]);
 
 
     const statusOptions = [
@@ -586,6 +777,11 @@ const InventoryPage: React.FC = () => {
         setSelectedProduct(product);
         setInitialStockAction(action);
         setUpdateStockModalOpen(true);
+    };
+
+    const handleGenerateQr = (product: Product) => {
+        setProductForQr(product);
+        setQrModalOpen(true);
     };
     
     // Selection Handlers
@@ -645,10 +841,78 @@ const InventoryPage: React.FC = () => {
             )
         },
         { header: 'SKU', accessor: 'sku' as keyof Product, sortable: true },
-        { header: 'Batch #', accessor: 'batchNumber' as keyof Product, sortable: true },
+        { 
+            header: 'Batch #', 
+            accessor: 'batchNumber' as keyof Product, 
+            sortable: true,
+            sortFn: (a: Product, b: Product) => {
+                const batchA = a.batchNumber || '';
+                const batchB = b.batchNumber || '';
+            
+                // Extracts parts: PREFIX-DATE-SUFFIX
+                const partsA = batchA.split('-');
+                const partsB = batchB.split('-');
+            
+                // Compare date parts if they exist and are valid-looking dates (e.g., YYYYMMDD)
+                const datePartA = partsA.length > 1 ? partsA[1] : '';
+                const datePartB = partsB.length > 1 ? partsB[1] : '';
+                if (/^\d{8}$/.test(datePartA) && /^\d{8}$/.test(datePartB)) {
+                    const dateCompare = datePartA.localeCompare(datePartB);
+                    if (dateCompare !== 0) return dateCompare;
+                }
+            
+                // Custom parser for the suffix (alphanumeric part like 'A10')
+                const parseSuffix = (suffix: string | undefined) => {
+                    if (!suffix) return { str: '', num: 0 };
+                    // Match an optional string part and an optional number part
+                    const match = suffix.match(/^([a-zA-Z]*)(\d*)$/);
+                    if (match) {
+                        return {
+                            str: match[1] || '',
+                            num: parseInt(match[2] || '0', 10)
+                        };
+                    }
+                    return { str: suffix, num: 0 }; // Fallback for unexpected formats
+                };
+                
+                const suffixPartA = parseSuffix(partsA.length > 2 ? partsA[2] : undefined);
+                const suffixPartB = parseSuffix(partsB.length > 2 ? partsB[2] : undefined);
+                
+                // Compare the string part of the suffix first (e.g., 'A' vs 'B')
+                if (suffixPartA.str !== suffixPartB.str) {
+                    return suffixPartA.str.localeCompare(suffixPartB.str);
+                }
+                
+                // If string parts are the same, compare the numeric part (e.g., 10 vs 2)
+                if (suffixPartA.num !== suffixPartB.num) {
+                    return suffixPartA.num - suffixPartB.num;
+                }
+                
+                // Fallback to full string natural sort if logic above is inconclusive
+                return batchA.localeCompare(batchB, undefined, { numeric: true, sensitivity: 'base' });
+            }
+        },
         { header: 'Product Name', accessor: 'name' as keyof Product, sortable: true },
         { header: 'Category', accessor: 'category' as keyof Product, sortable: true },
-        { header: 'Stock Quantity', accessor: 'stock' as keyof Product, sortable: true, render: (item: Product) => item.stock.toLocaleString() },
+        { 
+            header: 'Stock Quantity', 
+            accessor: 'stock' as keyof Product, 
+            sortable: true, 
+            render: (item: Product) => {
+                if (item.unitOfMeasure === 'Ton') {
+                    const kg = item.stock * 1000;
+                    return (
+                        <div>
+                            <span>{item.stock.toLocaleString()}</span>
+                            <span className="block text-xs text-gray-500 dark:text-gray-400">
+                                ({kg.toLocaleString()} kg)
+                            </span>
+                        </div>
+                    );
+                }
+                return item.stock.toLocaleString();
+            } 
+        },
         { header: 'Unit of Measure', accessor: 'unitOfMeasure' as keyof Product, sortable: true },
         { header: 'Price', accessor: 'price' as keyof Product, sortable: true, render: (item: Product) => `${item.currency} ${item.price.toFixed(2)}` },
         { 
@@ -751,6 +1015,12 @@ const InventoryPage: React.FC = () => {
                     <MinusIcon className="w-5 h-5" />
                 </button>
                 <button
+                    onClick={() => handleGenerateQr(item)}
+                    className="p-1 rounded-full text-gray-500 hover:text-blue-600 hover:bg-blue-100 dark:hover:bg-gray-700"
+                    title="Generate QR Code">
+                    <QrCodeIcon className="w-5 h-5" />
+                </button>
+                <button
                     onClick={() => handleEditProduct(item)}
                     className="p-1 rounded-full text-gray-500 hover:text-indigo-600 hover:bg-indigo-100 dark:hover:bg-gray-700"
                     title="Edit Product">
@@ -835,7 +1105,7 @@ const InventoryPage: React.FC = () => {
                     <span className="text-sm font-medium text-indigo-800 dark:text-indigo-200">{selectedProductIds.length} item(s) selected</span>
                     <div className="space-x-2">
                         <button onClick={() => setStatusUpdateOpen(true)} className="px-3 py-1.5 text-sm font-medium text-indigo-700 bg-white rounded-md shadow-sm hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">Update Status</button>
-                        <button onClick={() => setDeleteConfirmOpen(true)} className="px-3 py-1.5 text-sm font-medium text-red-700 bg-red-100 rounded-md shadow-sm hover:bg-red-200 dark:bg-red-900/50 dark:text-red-300 dark:hover:bg-red-900">Delete</button>
+                        <button onClick={() => setDeleteConfirmOpen(true)} className="px-3 py-1.5 text-sm font-medium text-red-700 bg-red-100 rounded-md shadow-sm hover:bg-red-200 dark:bg-red-900/50 dark:text-red-300 dark:hover:bg-red-900">Delete Selected</button>
                     </div>
                 </div>
             )}
@@ -860,11 +1130,12 @@ const InventoryPage: React.FC = () => {
             <Modal isOpen={isScannerOpen} onClose={() => setScannerOpen(false)} title="Scan Barcode">
                 <BarcodeScanner />
             </Modal>
+            <ProductQrCodeModal isOpen={isQrModalOpen} onClose={() => setQrModalOpen(false)} product={productForQr} />
             <Modal isOpen={isDeleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} title="Confirm Deletion">
                 <div>
                     <p>Are you sure you want to delete {selectedProductIds.length} product(s)? This action cannot be undone.</p>
                     <div className="flex justify-end pt-4 space-x-2 mt-4">
-                        <button onClick={() => setDeleteConfirmOpen(false)} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">Cancel</button>
+                        <button onClick={() => setDeleteConfirmOpen(false)} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500">Cancel</button>
                         <button onClick={handleConfirmDelete} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Delete</button>
                     </div>
                 </div>
@@ -878,7 +1149,7 @@ const InventoryPage: React.FC = () => {
                          <option value="Out of Stock">Out of Stock</option>
                     </select>
                      <div className="flex justify-end pt-4 space-x-2 mt-4">
-                        <button onClick={() => setStatusUpdateOpen(false)} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">Cancel</button>
+                        <button onClick={() => setStatusUpdateOpen(false)} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500">Cancel</button>
                         <button onClick={handleConfirmStatusUpdate} disabled={isUpdatingStatus} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-indigo-400">
                            {isUpdatingStatus ? 'Updating...' : 'Update Status'}
                         </button>

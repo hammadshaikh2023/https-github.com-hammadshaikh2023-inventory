@@ -5,7 +5,7 @@ import { useData } from '../context/DataContext';
 import { PurchaseOrder, OrderItem, Currency } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
-import { PlusIcon } from '../components/IconComponents';
+import { PlusIcon, ChevronDownIcon } from '../components/IconComponents';
 import ExportDropdown from '../components/ExportDropdown';
 import CurrencySelector from '../components/CurrencySelector';
 
@@ -172,13 +172,15 @@ export const CreatePurchaseOrderModal: React.FC<{
                 <div className="space-y-3 max-h-60 overflow-y-auto pr-2 pt-2">
                     {items.map((item, index) => (
                         <div key={index} className="grid grid-cols-12 items-start gap-2">
-                            <div className="col-span-5">
+                            <div className="col-span-5 relative">
                                 <input
                                     list="product-list"
                                     value={item.productNameSearch || item.productName || ''}
                                     onChange={e => handleItemChange(index, 'productNameSearch', e.target.value)}
                                     placeholder="Search product..."
+                                    className="product-search-input"
                                 />
+                                <ChevronDownIcon className="w-5 h-5 text-gray-400 absolute top-1/2 right-3 transform -translate-y-1/2 pointer-events-none" />
                             </div>
                             <div className="col-span-2">
                                 <input

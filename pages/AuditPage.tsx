@@ -55,7 +55,7 @@ const AuditPage: React.FC = () => {
                         type="date"
                         value={dateFrom}
                         onChange={e => setDateFrom(e.target.value)}
-                        className="shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"
+                        className=""
                     />
                 </div>
                  <div className="flex items-center gap-2">
@@ -64,12 +64,12 @@ const AuditPage: React.FC = () => {
                         type="date"
                         value={dateTo}
                         onChange={e => setDateTo(e.target.value)}
-                        className="shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"
+                        className=""
                     />
                 </div>
                  <div className="flex items-center gap-2">
                     <label className="text-sm font-medium">Type:</label>
-                    <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="shadow-sm sm:text-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600">
+                    <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="">
                         <option value="All">All Types</option>
                         <option value="Sales">Sales</option>
                         <option value="Purchase">Purchase</option>

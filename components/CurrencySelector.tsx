@@ -42,7 +42,7 @@ const CurrencySelector: React.FC<CurrencySelectorProps> = ({ value, onChange }) 
             <button
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
-                className="mt-1 block w-full shadow-sm rounded-md text-left flex justify-between items-center"
+                className="mt-1 block w-full rounded-md text-left flex justify-between items-center px-4 py-3 bg-gray-50 border border-gray-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
                 <span>{selectedCurrency.code} - {selectedCurrency.name}</span>
                 <ChevronDownIcon className="w-5 h-5 text-gray-400" />
